@@ -1,7 +1,11 @@
-export default function Home() {
+// src/app/page.tsx
+export default function Page() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold">Projet Initialisé 🚀</h1>
+    <main className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="p-6 bg-white rounded-lg shadow text-center">
+        <h1 className="text-lg font-medium">en attente de ma page de connexion</h1>
+        <p className="text-sm text-gray-500 mt-2">J’attends vraiment la page de connexion — quelqu’un d’autre s’en occupe.</p>
+      </div>
     </main>
   );
 }
