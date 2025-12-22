@@ -8,24 +8,20 @@ export const CreatePost = () => {
     <Card className="p-4 mb-4">
       <div className="flex gap-3 mb-4 border-b pb-4">
         <Avatar alt="Me" />
-        <input 
-          type="text" 
-          placeholder="Quoi de neuf, Antoine ?" 
+        <input
+          type="text"
+          placeholder="Quoi de neuf, Antoine ?"
           className="flex-1 bg-gray-100 rounded-full px-4 hover:bg-gray-200 transition outline-none cursor-pointer"
         />
       </div>
-      <div className="flex justify-between px-4">
-        <button className="flex items-center gap-2 text-red-500 font-medium hover:bg-gray-100 px-4 py-2 rounded-lg transition">
-          <Video size={24} />
-          <span>Vidéo en direct</span>
-        </button>
-        <button className="flex items-center gap-2 text-green-500 font-medium hover:bg-gray-100 px-4 py-2 rounded-lg transition">
-          <ImageIcon size={24} />
-          <span>Photo/Vidéo</span>
-        </button>
-        <button className="flex items-center gap-2 text-yellow-500 font-medium hover:bg-gray-100 px-4 py-2 rounded-lg transition">
-          <Smile size={24} />
-          <span>Humeur/Activité</span>
+
+      <div className="flex justify-center px-4">
+        <button
+          aria-label="Créer une page"
+          className="flex items-center gap-2 justify-center w-full max-w-xs mx-auto bg-gradient-to-r from-purple-500 to-purple-600 text-white font-medium px-4 py-2 rounded-lg shadow-md hover:from-purple-600 hover:to-purple-700 transition"
+        >
+          <Video size={20} className="text-white" />
+          <span className="text-sm">Créer une page</span>
         </button>
       </div>
     </Card>

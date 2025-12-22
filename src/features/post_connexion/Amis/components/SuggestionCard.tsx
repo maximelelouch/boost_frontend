@@ -30,7 +30,8 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ user }) => {
 
         {/* Zone boutons */}
         <div className="mt-auto flex flex-col gap-2">
-          <button className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
+          {/* Bouton violet */}
+          <button className="w-full py-2 bg-violet-50 hover:bg-violet-100 text-violet-600 font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
             <UserPlus size={18} />
             Ajouter
           </button>

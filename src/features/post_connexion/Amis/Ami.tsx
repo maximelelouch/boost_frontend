@@ -29,7 +29,7 @@ export default function Amis() {
                 {MOCK_REQUESTS.length}
               </span>
             </h2>
-            <button className="text-blue-600 text-sm hover:underline">Voir tout</button>
+            <button className="text-purple-600 text-sm hover:underline">Voir tout</button>
           </div>
 
           <div className="flex flex-col gap-2">

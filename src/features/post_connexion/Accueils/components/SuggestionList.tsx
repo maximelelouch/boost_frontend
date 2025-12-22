@@ -9,14 +9,13 @@ const SUGGESTIONS = [
   { name: "A", mutual: 3 },
   { name: "E", mutual: 1 },
   { name: "E", mutual: 8 },
-  
 ];
 
 export const SuggestionList = () => {
   return (
     <Card className="p-4 mb-4">
       <div className="flex justify-between items-center mb-4 text-gray-500">
-        <h3 className="font-semibold text-gray-600">Personnes que vous pourriez connaître</h3>
+        <h3 className="font-semibold text-purple-600">Personnes que vous pourriez connaître</h3>
         <MoreHorizontalIcon />
       </div>
 
@@ -29,11 +28,11 @@ export const SuggestionList = () => {
                  <X size={16} />
                </div>
                {/* Image Placeholder */}
-               <Image 
-                 src={`https://api.dicebear.com/7.x/initials/svg?seed=${person.name}`} 
-                 alt={person.name} 
-                 fill 
-                 className="object-cover" 
+               <Image
+                 src={`https://api.dicebear.com/7.x/initials/svg?seed=${person.name}`}
+                 alt={person.name}
+                 fill
+                 className="object-cover"
                />
             </div>
             
@@ -43,8 +42,8 @@ export const SuggestionList = () => {
                   <h4 className="font-semibold">{person.name}</h4>
                   <p className="text-xs text-gray-500">{person.mutual} ami(e)s en commun</p>
               </div>
-              <button className="flex items-center justify-center gap-2 w-full bg-blue-100 text-blue-600 hover:bg-blue-200 font-medium py-2 rounded-md transition text-sm">
-                <UserPlus size={16} />
+              <button className="flex items-center justify-center gap-2 w-full bg-purple-100 text-purple-600 hover:bg-purple-200 font-medium py-2 rounded-md transition text-sm">
+                <UserPlus size={16} className="text-purple-600" />
                 Ajouter ami(e)
               </button>
             </div>
@@ -52,7 +51,7 @@ export const SuggestionList = () => {
         ))}
       </div>
       
-      <button className="w-full text-blue-500 font-medium py-2 mt-2 hover:bg-gray-50 rounded text-sm">
+      <button className="w-full text-purple-500 font-medium py-2 mt-2 hover:bg-gray-50 rounded text-sm">
           Voir tout
       </button>
     </Card>

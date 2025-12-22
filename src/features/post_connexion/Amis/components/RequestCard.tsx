@@ -31,7 +31,8 @@ const RequestCard: React.FC<RequestCardProps> = ({ user }) => {
         </div>
 
         <div className="flex gap-2">
-          <button className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors text-sm">
+          {/* Bouton violet */}
+          <button className="flex-1 sm:flex-none px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-lg transition-colors text-sm">
             Confirmer
           </button>
           <button className="flex-1 sm:flex-none px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-colors text-sm">
