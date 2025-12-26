@@ -1,6 +1,8 @@
 'use client';
+
 import { useState } from 'react';
 import React from "react";
+import Link from "next/link"; 
 import { Search, Home, Users, Store, MonitorPlay, Bell } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { LeftSidebar, RightSidebar } from "@/features/navigation";
@@ -8,33 +10,44 @@ import Homee from '@/features/post_connexion/Accueils/components/Homee';
 import Ami from '../Amis/Ami';
 import Service from '../Services/Service';
 
-type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement> & { size?: number }>;
+// 1. IMPORT DE L'ANIMATION
+import { motion } from "framer-motion";
 
+// --- TYPES ---
+type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement> & { size?: number }>;
 type TabId = 'home' | 'friends' | 'services' ;
+
+// Configuration des onglets de navigation
+const NAV_TABS = [
+  { id: 'home', icon: Home },
+  { id: 'friends', icon: Users },
+  { id: 'services', icon: Store },
+] as const;
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
   // --- LOGIQUE DYNAMIQUE ---
-  // Si on est sur 'services', on élargit le conteneur principal.
-  // Sinon (home/friends), on garde la largeur "feed" classique.
   const isServiceTab = activeTab === 'services';
 
   // Largeur du conteneur principal (main)
   const mainContainerClass = isServiceTab 
-    ? 'max-w-5xl' // Largeur grand écran pour les services (~1024px)
-    : 'max-w-[700px]'; // Largeur standard pour le fil d'actu
+    ? 'max-w-5xl' 
+    : 'max-w-[700px]';
     
   // Largeur du conteneur interne
   const innerContainerClass = isServiceTab 
-    ? 'w-full' // Utilise tout l'espace disponible dans le main
-    : 'max-w-[590px]'; // Reste centré et étroit pour le feed
+    ? 'w-full' 
+    : 'max-w-[590px]';
   // -------------------------
 
   return (
     <div className="min-h-screen bg-[#f0f2f5] text-gray-900 font-sans">
       
+      {/* HEADER FIXE */}
       <header className="fixed top-0 left-0 right-0 h-14 bg-white shadow-sm flex items-center justify-between px-4 z-50">
+        
+        {/* LOGO + RECHERCHE */}
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-2xl">
             Th
@@ -45,48 +58,53 @@ export default function HomePage() {
           </div>
         </div>
 
-        <nav className="hidden md:flex gap-1 h-full">
-          <NavItem id="home" icon={Home} active={activeTab === 'home'} onClick={setActiveTab} />
-          <NavItem id="friends" icon={Users} active={activeTab === 'friends'} onClick={setActiveTab} />
-          <NavItem id="services" icon={Store} active={activeTab === 'services'} onClick={setActiveTab} />
+        {/* NAVIGATION CENTRALE (ANIMÉE) */}
+        <nav className="hidden md:flex h-full">
+          {NAV_TABS.map((tab) => (
+             <NavItem 
+                key={tab.id}
+                id={tab.id}
+                icon={tab.icon}
+                active={activeTab === tab.id}
+                onClick={setActiveTab}
+             />
+          ))}
         </nav>
 
+        {/* ACTIONS DROITE */}
         <div className="flex items-center gap-2">
-           <div className="hidden lg:flex items-center gap-2 bg-purple-50 text-purple-600 font-medium px-3 py-1 rounded-full cursor-pointer">
-             <span className="text-sm">Trouver vos ami(e)s</span>
-           </div>
-           
-           <ActionIcon icon={Bell} />
-           <Avatar size="sm" alt="Me" />
+            <Link href="/post_connexion/Amis">
+              <div className="hidden lg:flex items-center gap-2 bg-purple-50 text-purple-600 font-medium px-3 py-1 rounded-full cursor-pointer hover:bg-purple-100 transition-colors">
+                <span className="text-sm">Trouver vos ami(e)s</span>
+              </div>
+            </Link>
+            <ActionIcon icon={Bell} />
+            <Avatar size="sm" alt="Me" />
         </div>
       </header>
 
+      {/* CONTENU PRINCIPAL */}
       <div className="pt-14 flex justify-center">
         
+        {/* SIDEBAR GAUCHE */}
         <div className="w-[300px] hidden xl:block relative">
           <LeftSidebar />
         </div>
 
-        {/* APPLICATION DES CLASSES DYNAMIQUES ICI */}
+        {/* FEED / CONTENU CENTRAL */}
         <main className={`flex-1 ${mainContainerClass} p-4 min-h-screen transition-all duration-300 ease-in-out`}>
           <div className={`mx-auto ${innerContainerClass} transition-all duration-300`}>
             
             {activeTab === 'home' && (
-              <>
-                <div><Homee /></div>
-              </>
+              <div><Homee /></div>
             )}
 
             {activeTab === 'friends' && (
-              <>
-                <div><Ami /></div>
-              </>
+              <div><Ami /></div>
             )}
 
             {activeTab === 'services' && (
-              <>
-                <div><Service /></div>
-              </>
+              <div><Service /></div>
             )}
             
           </div>
@@ -97,7 +115,7 @@ export default function HomePage() {
   );
 }
 
-/* Petits composants helpers pour la Navbar uniquement */
+/* --- COMPOSANT NAVITEM ANIMÉ --- */
 const NavItem = ({
   id,
   icon: Icon,
@@ -111,10 +129,22 @@ const NavItem = ({
 }) => (
   <button
     onClick={() => onClick(id)}
-    className={`px-8 md:px-10 flex items-center border-b-4 cursor-pointer hover:bg-gray-100 transition ${active ? 'border-purple-500 text-purple-500' : 'border-transparent text-gray-500'}`}
+    className={`px-8 md:px-12 h-full flex items-center justify-center relative cursor-pointer outline-none transition-colors
+      ${active ? 'text-purple-600' : 'text-gray-500 hover:bg-gray-100'}
+    `}
     aria-pressed={active}
   >
-    <Icon className="w-7 h-7" />
+    {/* L'icône */}
+    <Icon className="w-7 h-7 relative z-10" />
+
+    {/* La barre de soulignement animée */}
+    {active && (
+      <motion.div
+        layoutId="header-nav-underline" // L'ID magique qui lie les éléments entre eux
+        className="absolute bottom-0 left-0 right-0 h-[4px] bg-purple-600 rounded-t-sm"
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      />
+    )}
   </button>
 );
 
