@@ -9,8 +9,10 @@ import {
   MapPin, 
   Target, 
   CheckCircle2,
-  MessageCircle
+  MessageCircle,
+  LayoutGrid
 } from 'lucide-react';
+import Link from 'next/link';
 
 import { BoostType } from './types';
 import { MY_PAGE, MY_POSTS } from './data';
@@ -40,11 +42,17 @@ export default function Publicite() {
       <div className="max-w-6xl mx-auto">
         
         {/* Header */}
-        <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+          <div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
                 <Megaphone className="text-blue-600" /> Centre de Publicité
             </h1>
-            <p className="text-gray-500 mt-1">Gérez vos promotions et boostez votre visibilité.</p>
+            <p className="text-gray-500 mt-1">Créez une nouvelle promotion ou analysez vos performances.</p>
+          </div>
+          <Link href="/dashboard" className="mt-4 sm:mt-0 inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-gray-800 hover:bg-gray-50 transition-colors">
+            <LayoutGrid size={16} />
+            Gérer mes campagnes
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

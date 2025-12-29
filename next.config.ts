@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    domains: [
+      'randomuser.me',
+      'picsum.photos',
+      'api.dicebear.com',
+    ],
     remotePatterns: [
       {
         protocol: 'https',

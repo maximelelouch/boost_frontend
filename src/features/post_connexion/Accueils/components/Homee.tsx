@@ -1,9 +1,8 @@
 import React from "react";
 import { CreatePost } from "@/features/post_connexion/Accueils/components/CreatePost";
 import { StoryReel } from "@/features/post_connexion/Accueils/components/StoryReel";
-import { SuggestionList } from "@/features/post_connexion/Accueils/components/SuggestionList";
-// 1. IMPORT DU COMPOSANT
 import { RightSidebar } from "@/features/navigation"; 
+import NewsFeed from "./NewsFeed"; 
 
 export default function HomePage() {
   return (
@@ -25,7 +24,7 @@ export default function HomePage() {
             {/* Si tu as le nouveau FeedActions (Bouton + et Créer page), utilise-le ici à la place de CreatePost/StoryReel selon ton choix */}
             <CreatePost /> 
             <StoryReel />
-            <SuggestionList />
+            <NewsFeed />
             
             {/* Exemple d'un post simple */}
             {/* <PostFeed /> */}

@@ -5,9 +5,11 @@ import { FriendUser } from '../types';
 
 interface RequestCardProps {
   user: FriendUser;
+  onConfirm: () => void;
+  onRemove: () => void;
 }
 
-const RequestCard: React.FC<RequestCardProps> = ({ user }) => {
+const RequestCard: React.FC<RequestCardProps> = ({ user, onConfirm, onRemove }) => {
   return (
     <div className="flex items-center p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 w-full mb-3">
       {/* Photo de profil */}
@@ -32,10 +34,10 @@ const RequestCard: React.FC<RequestCardProps> = ({ user }) => {
 
         <div className="flex gap-2">
           {/* Bouton violet */}
-          <button className="flex-1 sm:flex-none px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-lg transition-colors text-sm">
+          <button onClick={onConfirm} className="flex-1 sm:flex-none px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-lg transition-colors text-sm">
             Confirmer
           </button>
-          <button className="flex-1 sm:flex-none px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-colors text-sm">
+          <button onClick={onRemove} className="flex-1 sm:flex-none px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-colors text-sm">
             Supprimer
           </button>
         </div>
