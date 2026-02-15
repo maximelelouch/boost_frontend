@@ -1,155 +1,183 @@
 'use client';
 
-import { useState } from 'react';
-import React from "react";
-import Link from "next/link"; 
-import { Search, Home, Users, Store, MonitorPlay, Bell } from "lucide-react";
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { 
+  Search, Bell, ImageIcon, Rocket, 
+  MessageSquare, Menu, X, Loader2
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+// --- IMPORT DES COMPOSANTS ---
 import { Avatar } from "@/components/ui/Avatar";
-import { LeftSidebar, RightSidebar } from "@/features/navigation";
-import Homee from '@/features/post_connexion/Accueils/components/Homee';
-import Ami from '../Amis/Ami';
-import Service from '../Services/Service';
+import { Header, LeftSidebar, RightSidebar } from "@/features/navigation/index";
+import { StoryReel } from "@/features/post_connexion/Accueils/components/StoryReel";
+import { SuggestionList } from "@/features/post_connexion/Accueils/components/SuggestionList";
+import PostCard from '@/features/post_connexion/Accueils/components/PostCard';
+import CreatePostModal from '@/features/post_connexion/Accueils/components/CreatePostModal';
+import CreatePageModal from '@/features/post_connexion/Accueils/components/CreatePageModal';
 
-// 1. IMPORT DE L'ANIMATION
-import { motion } from "framer-motion";
-
-// --- TYPES ---
-type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement> & { size?: number }>;
-type TabId = 'home' | 'friends' | 'services' ;
-
-// Configuration des onglets de navigation
-const NAV_TABS = [
-  { id: 'home', icon: Home },
-  { id: 'friends', icon: Users },
-  { id: 'services', icon: Store },
-] as const;
+// --- IMPORT DES HOOKS API ---
+import { useUser, usePosts, usePages, useFriends } from '@lib/hooks/useAPI';
+import { authService } from '@lib/api/services';
+import { getFullImageUrl } from '@/utils/utils';
+import type { Post } from '@lib/types/api.types';
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<TabId>('home');
+  const router = useRouter();
+  
+  // États pour les modales
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [showCreatePage, setShowCreatePage] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // --- LOGIQUE DYNAMIQUE ---
-  const isServiceTab = activeTab === 'services';
+  // RÉCUPÉRATION DES DONNÉES RÉELLES DU BACKEND
+  const { user, isLoading: userLoading } = useUser();
+  const { 
+    posts, 
+    isLoading: postsLoading, 
+    error: postsError, 
+    likePost, 
+    refresh: refreshFeed,
+    loadMore,
+    hasMore 
+  } = usePosts();
+  
+  const { pages, refresh: refreshPages } = usePages();
+  const { friends, requests } = useFriends();
 
-  // Largeur du conteneur principal (main)
-  const mainContainerClass = isServiceTab 
-    ? 'max-w-5xl' 
-    : 'max-w-[700px]';
-    
-  // Largeur du conteneur interne
-  const innerContainerClass = isServiceTab 
-    ? 'w-full' 
-    : 'max-w-[590px]';
-  // -------------------------
+  // RÉFÉRENCE POUR LE SCROLL INFINI
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Sécurité : Redirection si non connecté
+  useEffect(() => {
+    if (!userLoading && !authService.isAuthenticated()) {
+      router.push('/');
+    }
+  }, [userLoading, router]);
+
+  // LOGIQUE INTERSECTION OBSERVER (SCROLL INFINI)
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !postsLoading) {
+          loadMore();
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, postsLoading, loadMore]);
+
+  // Handlers pour les créations
+  const handlePostCreated = (post: Post) => {
+    setShowCreatePost(false);
+    refreshFeed(); // Recharge le feed dynamiquement depuis Django
+  };
+
+  const handlePageCreated = () => {
+    setShowCreatePage(false);
+    refreshPages(); // Recharge la liste des pages
+  };
+
+  if (userLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-white">
+        <Loader2 className="animate-spin h-12 w-12 text-purple-600" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] text-gray-900 font-sans">
-      
-      {/* HEADER FIXE */}
-      <header className="fixed top-0 left-0 right-0 h-14 bg-white shadow-sm flex items-center justify-between px-4 z-50">
-        
-        {/* LOGO + RECHERCHE */}
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-2xl">
-            Th
-          </div>
-          <div className="hidden md:flex items-center bg-gray-100 rounded-full px-3 py-2">
-            <Search className="text-gray-500 w-5 h-5" />
-            <input type="text" placeholder="Rechercher sur Threadly" className="bg-transparent border-none outline-none ml-2 text-sm w-48" />
-          </div>
-        </div>
+    <>
+      <div className="max-w-[580px] mx-auto">
+            
+            {/* 1. Stories */}
+            <StoryReel />
 
-        {/* NAVIGATION CENTRALE (ANIMÉE) */}
-        <nav className="hidden md:flex h-full">
-          {NAV_TABS.map((tab) => (
-             <NavItem 
-                key={tab.id}
-                id={tab.id}
-                icon={tab.icon}
-                active={activeTab === tab.id}
-                onClick={setActiveTab}
-             />
-          ))}
-        </nav>
-
-        {/* ACTIONS DROITE */}
-        <div className="flex items-center gap-2">
-            <Link href="/post_connexion/Amis">
-              <div className="hidden lg:flex items-center gap-2 bg-purple-50 text-purple-600 font-medium px-3 py-1 rounded-full cursor-pointer hover:bg-purple-100 transition-colors">
-                <span className="text-sm">Trouver vos ami(e)s</span>
+            {/* 2. Create Post Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-5">
+              <div className="flex items-center gap-3 mb-4">
+                <Avatar src={getFullImageUrl(user?.profile_picture_url)} />
+                <button 
+                  onClick={() => setShowCreatePost(true)}
+                  className="flex-1 text-left px-5 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-900 transition-colors text-sm font-medium"
+                >
+                  À quoi pensez-vous, {user?.first_name} ?
+                </button>
               </div>
-            </Link>
-            <ActionIcon icon={Bell} />
-            <Avatar size="sm" alt="Me" />
-        </div>
-      </header>
+              <div className="flex items-center justify-around pt-3 border-t border-gray-50">
+                <button 
+                  onClick={() => setShowCreatePost(true)}
+                  className="flex items-center gap-2 px-6 py-2 hover:bg-gray-50 rounded-lg transition text-red-500 font-semibold text-sm"
+                >
+                  <ImageIcon size={20} /> Photo/Vidéo
+                </button>
+                <button 
+                  onClick={() => setShowCreatePage(true)}
+                  className="flex items-center gap-2 px-6 py-2 hover:bg-gray-50 rounded-lg transition text-purple-600 font-semibold text-sm"
+                >
+                  <Rocket size={20} /> Créer une Page
+                </button>
+              </div>
+            </div>
 
-      {/* CONTENU PRINCIPAL */}
-      <div className="pt-14 flex justify-center">
-        
-        {/* SIDEBAR GAUCHE */}
-        <div className="w-[300px] hidden xl:block relative">
-          <LeftSidebar />
-        </div>
+            {/* 3. Feed d'actualité (Données Backend) */}
+            <div className="space-y-4">
+              {posts.length > 0 ? (
+                posts.map((post, index) => (
+                  <React.Fragment key={post.id}>
+                    <PostCard post={post} onLike={likePost} />
+                    {/* Insertion des suggestions d'amis tous les quelques posts */}
+                    {index === 2 && <SuggestionList />}
+                  </React.Fragment>
+                ))
+              ) : !postsLoading && (
+                <div className="bg-white p-12 rounded-xl text-center border-2 border-dashed border-gray-200">
+                  <p className="text-gray-900 font-medium">Aucune publication pour le moment.</p>
+                </div>
+              )}
 
-        {/* FEED / CONTENU CENTRAL */}
-        <main className={`flex-1 ${mainContainerClass} p-4 min-h-screen transition-all duration-300 ease-in-out`}>
-          <div className={`mx-auto ${innerContainerClass} transition-all duration-300`}>
-            
-            {activeTab === 'home' && (
-              <div><Homee /></div>
+              {/* Loader de pagination (Scroll Infini) */}
+              <div ref={loadMoreRef} className="py-8 flex justify-center">
+                {postsLoading ? (
+                  <Loader2 className="animate-spin h-8 w-8 text-purple-600" />
+                ) : !hasMore && posts.length > 0 ? (
+                  <p className="text-gray-800 text-sm font-medium">Vous avez rattrapé tout le contenu !</p>
+                ) : null}
+              </div>
+            </div>
+
+            {postsError && (
+              <div className="bg-white p-6 rounded-xl border border-red-100 text-center mb-10">
+                <p className="text-red-500 font-medium">{postsError}</p>
+                <button onClick={() => refreshFeed()} className="mt-2 text-purple-600 text-sm underline font-bold">Réessayer</button>
+              </div>
             )}
-
-            {activeTab === 'friends' && (
-              <div><Ami /></div>
-            )}
-
-            {activeTab === 'services' && (
-              <div><Service /></div>
-            )}
-            
           </div>
-        </main>
+      {/* --- MODALES --- */}
+      <AnimatePresence>
+        {showCreatePost && (
+          <CreatePostModal 
+            isOpen={showCreatePost} 
+            onClose={() => setShowCreatePost(false)} 
+            onPostCreated={handlePostCreated} 
+          />
+        )}
         
-      </div>
-    </div>
+        {showCreatePage && (
+          <CreatePageModal 
+            isOpen={showCreatePage} 
+            onClose={() => setShowCreatePage(false)} 
+            onPageCreated={handlePageCreated}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }
-
-/* --- COMPOSANT NAVITEM ANIMÉ --- */
-const NavItem = ({
-  id,
-  icon: Icon,
-  active,
-  onClick
-}: {
-  id: TabId;
-  icon: IconComponent;
-  active?: boolean;
-  onClick: React.Dispatch<React.SetStateAction<TabId>>;
-}) => (
-  <button
-    onClick={() => onClick(id)}
-    className={`px-8 md:px-12 h-full flex items-center justify-center relative cursor-pointer outline-none transition-colors
-      ${active ? 'text-purple-600' : 'text-gray-500 hover:bg-gray-100'}
-    `}
-    aria-pressed={active}
-  >
-    {/* L'icône */}
-    <Icon className="w-7 h-7 relative z-10" />
-
-    {/* La barre de soulignement animée */}
-    {active && (
-      <motion.div
-        layoutId="header-nav-underline" // L'ID magique qui lie les éléments entre eux
-        className="absolute bottom-0 left-0 right-0 h-[4px] bg-purple-600 rounded-t-sm"
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      />
-    )}
-  </button>
-);
-
-const ActionIcon = ({ icon: Icon }: { icon: IconComponent }) => (
-  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-300 transition">
-    <Icon size={20} className="text-black" />
-  </div>
-);

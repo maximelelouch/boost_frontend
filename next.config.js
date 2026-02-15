@@ -1,27 +1,44 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    dangerouslyAllowSVG: true, // Requis pour Dicebear
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'i.pravatar.cc',
-        port: '',
+        hostname: 'api.dicebear.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '8000',
+        pathname: '/media/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8000',
+        pathname: '/media/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'randomuser.me',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: 'picsum.photos',
-        port: '',
+        hostname: 'images.unsplash.com',
         pathname: '/**',
-      },
+      }
     ],
   },
-};
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig

@@ -2,21 +2,26 @@
 'use client';
 
 import React from 'react';
-import { Campaign } from '../types';
+import type { Boost } from '@lib/types/api.types';
 import { motion } from 'framer-motion';
 
 interface CampaignListProps {
-  campaigns: Campaign[];
-  selectedCampaignId: string | null;
-  onSelectCampaign: (id: string) => void;
+  boosts: Boost[];
+  selectedBoostId: string | null;
+  onSelectBoost: (id: string) => void;
+  isLoading?: boolean;
 }
 
-const CampaignListItem = ({ campaign, isSelected, onSelect }: { campaign: Campaign, isSelected: boolean, onSelect: () => void }) => {
+const CampaignListItem = ({ boost, isSelected, onSelect }: { boost: Boost, isSelected: boolean, onSelect: () => void }) => {
   const statusClasses = {
-    active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-    completed: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-    paused: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+    ACTIVE: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    COMPLETED: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+    PAUSED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
   };
+
+  const budgetNumber = typeof boost.budget === 'string' ? Number(boost.budget) : Number(boost.budget);
+  const title = boost.target_type === 'PAGE' ? 'Boost de page' : 'Boost de post';
+  const subtitle = `Cible: ${String(boost.target_id).slice(0, 10)}...`;
 
   return (
     <motion.button
@@ -26,38 +31,45 @@ const CampaignListItem = ({ campaign, isSelected, onSelect }: { campaign: Campai
       whileTap={{ scale: 0.98 }}
     >
       <div className="flex justify-between items-start">
-        <h3 className="font-bold text-gray-900 dark:text-white">{campaign.name}</h3>
-        <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusClasses[campaign.status]}`}>
-          {campaign.status}
+        <h3 className="font-bold text-gray-900 dark:text-white">{title}</h3>
+        <span className={`text-xs font-medium px-2 py-1 rounded-full ${(statusClasses as any)[boost.status] || statusClasses.PAUSED}`}>
+          {boost.status}
         </span>
       </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{campaign.type}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{subtitle}</p>
       <div className="flex justify-between items-end mt-3">
-        <div className="text-sm">
-          <span className="font-semibold text-gray-800 dark:text-gray-200">{campaign.stats.totalViews.toLocaleString()}</span>
-          <span className="text-gray-500 dark:text-gray-400"> vues</span>
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          {boost.start_date ? new Date(boost.start_date).toLocaleDateString('fr-FR') : '—'}
+          {' → '}
+          {boost.end_date ? new Date(boost.end_date).toLocaleDateString('fr-FR') : '—'}
         </div>
         <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
-          {campaign.budget}$ <span className="font-normal text-gray-500">budget</span>
+          {(Number.isFinite(budgetNumber) ? budgetNumber : 0).toLocaleString('fr-FR')} <span className="font-normal text-gray-500">budget</span>
         </div>
       </div>
     </motion.button>
   );
 };
 
-const CampaignList: React.FC<CampaignListProps> = ({ campaigns, selectedCampaignId, onSelectCampaign }) => {
+const CampaignList: React.FC<CampaignListProps> = ({ boosts, selectedBoostId, onSelectBoost, isLoading }) => {
   return (
     <div className="bg-white dark:bg-gray-800/50 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
       <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 px-2">Toutes les campagnes</h2>
       <div className="space-y-2">
-        {campaigns.map(campaign => (
-          <CampaignListItem 
-            key={campaign.id}
-            campaign={campaign}
-            isSelected={selectedCampaignId === campaign.id}
-            onSelect={() => onSelectCampaign(campaign.id)}
-          />
-        ))}
+        {isLoading ? (
+          <div className="px-2 py-6 text-sm text-gray-500 dark:text-gray-400">Chargement...</div>
+        ) : boosts.length ? (
+          boosts.map(boost => (
+            <CampaignListItem 
+              key={boost.id}
+              boost={boost}
+              isSelected={selectedBoostId === boost.id}
+              onSelect={() => onSelectBoost(boost.id)}
+            />
+          ))
+        ) : (
+          <div className="px-2 py-6 text-sm text-gray-500 dark:text-gray-400">Aucune campagne.</div>
+        )}
       </div>
     </div>
   );

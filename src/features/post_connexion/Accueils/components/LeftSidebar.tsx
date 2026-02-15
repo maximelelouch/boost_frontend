@@ -4,6 +4,12 @@ import React from "react";
 import { Users, User, Bookmark, MonitorPlay, Store, Clock, ChevronDown } from "lucide-react";
 import Link from "next/link"; 
 import { Avatar } from "@/components/ui/Avatar";
+import { Friend } from "@lib/types/api.types";
+import { useUser } from "@lib/hooks/useAPI";
+
+interface LeftSidebarProps {
+  friends?: Friend[];
+}
 
 // Configuration des éléments du menu
 const MENU_ITEMS = [
@@ -22,7 +28,8 @@ const MENU_ITEMS = [
   
 ];
 
-export const LeftSidebar = () => {
+export const LeftSidebar = ({ friends = [] }: LeftSidebarProps) => {
+  const { user } = useUser();
   return (
     <aside className="fixed left-0 top-14 h-[calc(100vh-56px)] w-[300px] p-4 overflow-y-auto hidden xl:block hover:overflow-y-scroll scrollbar-hide">
       <div className="space-y-2">
@@ -30,9 +37,9 @@ export const LeftSidebar = () => {
         {/* Profil courant (Rendu cliquable aussi via Link) */}
         <Link href="/post_connexion/Profils">
           <div className="flex items-center gap-3 p-2 hover:bg-purple-50 rounded-lg cursor-pointer transition group">
-            <Avatar size="sm" alt="Me" />
+            <Avatar size="sm" alt={user?.first_name || 'Utilisateur'} src={user?.avatar} />
             <span className="font-semibold text-sm text-gray-700 group-hover:text-purple-700 transition-colors">
-              Antoine Emmanuel ESSOMBA
+              {user ? `${user.first_name} ${user.last_name}` : 'Chargement...'}
             </span>
           </div>
         </Link>
@@ -44,12 +51,19 @@ export const LeftSidebar = () => {
           <Link 
             key={index} 
             href={item.href || "#"} 
-            className="flex items-center gap-3 p-2 hover:bg-purple-50 rounded-lg cursor-pointer transition group"
+            className="flex items-center justify-between p-2 hover:bg-purple-50 rounded-lg cursor-pointer transition group"
           >
-            <item.icon className={`w-6 h-6 ${item.color} group-hover:scale-110 transition-transform`} />
-            <span className="font-medium text-sm text-gray-700 group-hover:text-purple-700 transition-colors">
-              {item.label}
-            </span>
+            <div className="flex items-center gap-3">
+              <item.icon className={`w-6 h-6 ${item.color} group-hover:scale-110 transition-transform`} />
+              <span className="font-medium text-sm text-gray-700 group-hover:text-purple-700 transition-colors">
+                {item.label}
+              </span>
+            </div>
+            {item.label === "Ami(e)s" && (
+              <span className="text-xs font-bold text-gray-500 bg-gray-100 group-hover:bg-purple-100 px-2 py-0.5 rounded-full transition-colors">
+                {friends.length}
+              </span>
+            )}
           </Link>
           /* ---------------------- */
         ))}
