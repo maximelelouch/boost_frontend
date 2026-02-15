@@ -1,16 +1,28 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAuth } from '@lib/hooks/useAPI';
 import Link from 'next/link';
 import { Mail, Lock, Loader2, ArrowRight, Heart, MessageCircle, Share2, MoreHorizontal, ThumbsUp } from 'lucide-react';
 
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, isLoading, error } = useAuth();
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 2000);
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    try {
+      await login({ 
+        username: email,  
+        password 
+      });
+      // La redirection est gérée dans le hook
+    } catch (err) {
+      // L'erreur est gérée et affichée par le hook
+    }
   }
 
   return (
@@ -148,7 +160,7 @@ export default function LoginPage() {
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <Mail className="h-5 w-5 text-gray-500 group-focus-within:text-violet-400 transition-colors" />
                     </div>
-                    <input type="email" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="nom@exemple.com" />
+                    <input type="email" name="email" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="nom@exemple.com" />
                 </div>
             </div>
             <div className="group">
@@ -160,7 +172,7 @@ export default function LoginPage() {
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <Lock className="h-5 w-5 text-gray-500 group-focus-within:text-violet-400 transition-colors" />
                     </div>
-                    <input type="password" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="••••••••" />
+                    <input type="password" name="password" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="••••••••" />
                 </div>
             </div>
             <button type="submit" disabled={isLoading} className="relative w-full py-3.5 bg-white text-black font-semibold rounded-xl hover:bg-gray-100 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 overflow-hidden group shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(139,92,246,0.3)] mt-2">
@@ -170,6 +182,8 @@ export default function LoginPage() {
                 <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent z-10" />
             </button>
           </form>
+
+                    {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
 
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/10"></span></div>

@@ -1,16 +1,50 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAuth } from '@lib/hooks/useAPI';
 import Link from 'next/link';
 import { User, Mail, Lock, Loader2, ArrowRight, Heart, Users, Calendar } from 'lucide-react';
 
 export default function SignupPage() {
-  const [isLoading, setIsLoading] = useState(false);
+  const { register, isLoading, error } = useAuth();
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 2000);
+    const formData = new FormData(event.currentTarget);
+    const username = formData.get('username') as string;
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    const fullName = (username || '').trim();
+    const nameParts = fullName.split(/\s+/).filter(Boolean);
+    const first_name = nameParts[0] || fullName;
+    const last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : fullName;
+
+    const emailNormalized = email.trim().toLowerCase();
+    const emailPrefix = emailNormalized.split('@')[0] || '';
+    const usernameForBackend = (fullName || emailPrefix)
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_\.\-]/g, '')
+      .slice(0, 150);
+
+    try {
+      // Envoyer les données au format attendu par le backend
+      await register({ 
+        username: usernameForBackend,
+        email: emailNormalized,
+        password: password,
+        // Djoser exige souvent first_name/last_name + re_password selon config
+        first_name,
+        last_name,
+        re_password: password,
+      });
+      // La redirection est gérée par le hook useAuth
+    } catch (err) {
+      // L'erreur est déjà gérée par le hook useAuth
+      console.error('Échec de l\'inscription :', err);
+    }
   }
 
   return (
@@ -108,7 +142,7 @@ export default function SignupPage() {
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <User className="h-5 w-5 text-gray-500 group-focus-within:text-violet-400 transition-colors" />
                     </div>
-                    <input type="text" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="Jean Dupont" />
+                    <input type="text" name="username" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="Jean Dupont" />
                 </div>
             </div>
             <div className="group">
@@ -117,7 +151,7 @@ export default function SignupPage() {
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <Mail className="h-5 w-5 text-gray-500 group-focus-within:text-violet-400 transition-colors" />
                     </div>
-                    <input type="email" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="nom@exemple.com" />
+                    <input type="email" name="email" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="nom@exemple.com" />
                 </div>
             </div>
             <div className="group">
@@ -126,7 +160,7 @@ export default function SignupPage() {
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <Lock className="h-5 w-5 text-gray-500 group-focus-within:text-violet-400 transition-colors" />
                     </div>
-                    <input type="password" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="Au moins 8 caractères" />
+                    <input type="password" name="password" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="Au moins 8 caractères" />
                 </div>
             </div>
             <button type="submit" disabled={isLoading} className="relative w-full py-3.5 bg-white text-black font-semibold rounded-xl hover:bg-gray-100 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 overflow-hidden group shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(139,92,246,0.3)] mt-4">
@@ -137,6 +171,7 @@ export default function SignupPage() {
             </button>
           </form>
 
+                    {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/10"></span></div>
             <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#0A0A0B] px-2 text-gray-500">Ou s inscrire avec</span></div>

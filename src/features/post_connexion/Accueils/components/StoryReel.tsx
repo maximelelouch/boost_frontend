@@ -49,6 +49,7 @@ export const StoryReel = () => {
       <CreatePostModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
+        onPostCreated={() => setIsModalOpen(false)}
       />
     </>
   );

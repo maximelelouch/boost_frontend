@@ -6,9 +6,10 @@ import { X, Layout, Info, Rocket, Camera, Image as ImageIcon } from 'lucide-reac
 interface CreatePageModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onPageCreated?: (page: any) => void; // Ajout de la fonction de rappel onPageCreated
 }
 
-export default function CreatePageModal({ isOpen, onClose }: CreatePageModalProps) {
+export default function CreatePageModal({ isOpen, onClose, onPageCreated }: CreatePageModalProps) {
   // --- ÉTATS ---
   const [formData, setFormData] = useState({
     name: '',

@@ -1,23 +1,29 @@
 // src/features/post_connexion/Amis/components/RequestCard.tsx
 import React from 'react';
 import { Users } from 'lucide-react';
-import { FriendUser } from '../types';
+import type { User } from '@lib/types/api.types';
+import { getFullImageUrl } from '@/utils/utils';
+import { useMutualFriendsCached } from '@lib/hooks/useAPI';
 
 interface RequestCardProps {
-  user: FriendUser;
+  user: User;
   onConfirm: () => void;
   onRemove: () => void;
 }
 
 const RequestCard: React.FC<RequestCardProps> = ({ user, onConfirm, onRemove }) => {
+  const { mutualCount } = useMutualFriendsCached(user.mutual_friends_count === undefined ? user.id : undefined);
+  const displayedMutualCount = user.mutual_friends_count ?? mutualCount;
+
   return (
     <div className="flex items-center p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 w-full mb-3">
+
       {/* Photo de profil */}
       <div className="relative w-20 h-20 flex-shrink-0 mr-4">
         {/* Note: Utilisez <Image /> de next/image en prod si configuré, sinon img standard */}
         <img
-          src={user.avatar}
-          alt={user.name}
+          src={getFullImageUrl(user.profile_picture_url)}
+          alt={user.username}
           className="w-full h-full object-cover rounded-full border-2 border-gray-100"
         />
       </div>
@@ -25,11 +31,13 @@ const RequestCard: React.FC<RequestCardProps> = ({ user, onConfirm, onRemove }) 
       {/* Infos et Actions */}
       <div className="flex-grow flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="font-bold text-gray-900 text-lg">{user.name}</h3>
-          <p className="text-sm text-gray-500 flex items-center gap-1">
-            <Users size={14} />
-            {user.mutualFriends} amis en commun
-          </p>
+          <h3 className="font-bold text-gray-900 text-lg">{user.first_name} {user.last_name}</h3>
+          {displayedMutualCount > 0 && (
+            <div className="flex items-center gap-1 text-sm text-gray-500">
+              <Users size={16} />
+              <span>{displayedMutualCount} ami(s) en commun</span>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2">

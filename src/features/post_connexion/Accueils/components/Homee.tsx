@@ -1,45 +1,42 @@
-import React from "react";
-import { CreatePost } from "@/features/post_connexion/Accueils/components/CreatePost";
-import { StoryReel } from "@/features/post_connexion/Accueils/components/StoryReel";
-import { RightSidebar } from "@/features/navigation"; 
-import NewsFeed from "./NewsFeed"; 
+"use client";
 
-export default function HomePage() {
-  return (
-    <div className="min-h-screen bg-[#f0f2f5] text-gray-900 font-sans">
-      
-      {/* 2. CONTENEUR FLEX : 
-         'flex' met les éléments côte à côte.
-         'justify-center' centre le tout horizontalement.
-         'pt-14' laisse la place pour le Header fixe.
-      */}
-      <div className="flex justify-center pt-14">
+import React from 'react';
+import { Home } from 'lucide-react';
+import PostCard from '@/features/post_connexion/Accueils/components/PostCard';
+import type { Post } from '@lib/types/api.types';
 
-        {/* (Optionnel) Sidebar Gauche irait ici */}
-        {/* <div className="w-[300px] hidden xl:block relative"><LeftSidebar /></div> */}
+interface HomeeProps {
+  posts: Post[];
+  likePost?: (postId: string) => Promise<void>;
+}
 
-        {/* --- COLONNE CENTRALE (Feed) --- */}
-        <main className="flex-1 max-w-[700px] p-4 min-h-screen">
-          <div className="mx-auto max-w-[590px]">
-            {/* Si tu as le nouveau FeedActions (Bouton + et Créer page), utilise-le ici à la place de CreatePost/StoryReel selon ton choix */}
-            <CreatePost /> 
-            <StoryReel />
-            <NewsFeed />
-            
-            {/* Exemple d'un post simple */}
-            {/* <PostFeed /> */}
-          </div>
-        </main>
+export default function Homee({ posts, likePost }: HomeeProps) {
+  const safeLikePost = likePost || (async () => {});
 
-        {/* --- 3. COLONNE DE DROITE (RightSidebar) --- */}
-        {/* 'hidden xl:block' : Caché sur mobile/tablette, visible sur grand écran.
-            'w-[300px]' : Réserve l'espace pour ne pas que le feed soit caché par la sidebar fixe.
-            'relative' : Sert de repère pour le positionnement.
-        */}
-        
-        
+  if (posts.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Home className="w-10 h-10 text-gray-400" />
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
+          Bienvenue sur Threadly !
+        </h3>
+        <p className="text-gray-500 mb-6">
+          Commencez par créer votre première publication ou créer une page pour votre entreprise
+        </p>
+        <div className="text-sm text-gray-400">
+          Utilisez les boutons ci-dessus pour commencer
+        </div>
       </div>
+    );
+  }
 
+  return (
+    <div className="space-y-4">
+      {posts.map(post => (
+        <PostCard key={post.id} post={post} onLike={safeLikePost} />
+      ))}
     </div>
   );
 }

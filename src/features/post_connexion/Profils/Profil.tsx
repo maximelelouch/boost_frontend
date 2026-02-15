@@ -1,327 +1,333 @@
-"use client";
+'use client';
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+
 import { 
-  Camera, MapPin, Briefcase, Calendar, Edit3, 
-  Flag, Plus, Settings, BarChart3, ExternalLink, 
-  Check, Image as ImageIcon 
+  Camera, MapPin, Briefcase, Calendar, Edit3, Flag ,
+  Plus, Settings, BarChart3, ExternalLink, 
+  Check, X, Lock, User as UserIcon, Loader2 
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+// --- IMPORT UI & NAVIGATION ---
 import { Avatar } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
-import CreatePage from "@/features/post_connexion/Accueils/components/CreatePage"; 
+import { LeftSidebar } from "@/features/navigation/index";
+import { RightSidebar } from "@/features/navigation/index";
+import PostCard from '@/features/post_connexion/Accueils/components/PostCard';
+import CreatePostModal from '@/features/post_connexion/Accueils/components/CreatePostModal';
+import CreatePageModal from '@/features/post_connexion/Accueils/components/CreatePageModal';
+import { Header } from '@/features/navigation';
 
-// --- 1. IMPORT DE FRAMER MOTION ---
-import { motion } from "framer-motion";
+// --- IMPORT API SERVICES & HOOKS ---
+import { useUser, usePosts, usePages, useFriends, useUpload } from '@lib/hooks/useAPI';
+import { usersService } from '@lib/api/services';
+import type { User } from '@lib/types/api.types';
+import { getFullImageUrl } from '@/utils/utils';
 
-// --- TYPES ---
-type TabType = "posts" | "about" | "pages" | "photos";
-
-// Données simulées
-const MY_PAGES = [
-  {
-    id: 1,
-    name: "Threadly Cuisine",
-    category: "Cuisine & Art de vivre",
-    role: "Admin",
-    followers: "12.5k",
-    notifications: 3,
-    coverColor: "bg-orange-100",
-  },
-  {
-    id: 2,
-    name: "Antoine Tech",
-    category: "Créateur digital",
-    role: "Éditeur",
-    followers: "2.1k",
-    notifications: 0,
-    coverColor: "bg-blue-100",
-  },
-];
+type TabType = "posts" | "about" | "pages" | "friends" | "photos";
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState<TabType>("posts");
-  const [isPageModalOpen, setIsPageModalOpen] = useState(false);
-  const [isEditingIntro, setIsEditingIntro] = useState(false);
+  const router = useRouter();
   
-  const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [profileImage, setProfileImage] = useState<string | null>(null); 
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // Hooks de données
+  const { user, isLoading: isLoadingUser, refresh: refreshUser } = useUser();
+  const { posts, likePost, refresh: refreshFeed } = usePosts();
+  const { pages, refresh: refreshPages } = usePages();
+  const { friends, requests } = useFriends();
+  const { uploadFile, isUploading } = useUpload();
+
+  // États UI
+  const [activeTab, setActiveTab] = useState<TabType>("posts");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [showCreatePage, setShowCreatePage] = useState(false);
+  
+  // États de formulaire
+  const [editedUser, setEditedUser] = useState({ first_name: '', last_name: '', city: '', gender: 'ALL', birth_date: '', interests: '' });
+  const [passwords, setPasswords] = useState({ current: '', new: '' });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
 
-  // Configuration des Onglets pour la boucle d'affichage
-  const TABS = [
-    { id: "posts", label: "Publications" },
-    { id: "about", label: "À propos" },
-    { id: "pages", label: "Mes Pages", count: MY_PAGES.length },
-    { id: "photos", label: "Photos" },
-  ];
+  // Filtrer les posts pour n'avoir que les miens
+  const myPosts = posts.filter(p => p.author.id === user?.id);
 
-  // --- HANDLERS ---
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+  const friendUsers: User[] = useMemo(() => {
+    if (!user?.id) return [];
+    return friends
+      .filter((f) => f.status === 'ACCEPTED')
+      .map((f) => {
+        const requesterId = f.requester?.id;
+        const addresseeId = f.addressee?.id;
+        if (!requesterId || !addresseeId) return null;
+        return requesterId === user.id ? f.addressee : f.requester;
+      })
+      .filter((u): u is User => !!u);
+  }, [friends, user?.id]);
+
+  useEffect(() => {
+    if (user) {
+      setEditedUser({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        city: user.city || '',
+        gender: (user.gender || 'ALL') as any,
+        birth_date: user.birth_date || '',
+        interests: (user.interests || []).join(', '),
+      });
+    }
+  }, [user]);
+
+  // --- ACTIONS ---
+
+  const handleUpdateInfo = async () => {
+    try {
+      const cleanedInterests = editedUser.interests
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      await usersService.updateProfile({
+        first_name: editedUser.first_name,
+        last_name: editedUser.last_name,
+        city: editedUser.city || undefined,
+        gender: editedUser.gender || undefined,
+        birth_date: editedUser.birth_date || undefined,
+        interests: cleanedInterests,
+      });
+      setIsEditingProfile(false);
+      refreshUser();
+      alert("Profil mis à jour !");
+    } catch (err) {
+      alert("Erreur lors de la mise à jour");
+    }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'cover' | 'profile') => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'profile_picture_url' | 'cover_photo_url') => {
     if (e.target.files && e.target.files[0]) {
-      const url = URL.createObjectURL(e.target.files[0]);
-      if (type === 'cover') setCoverImage(url);
-      if (type === 'profile') setProfileImage(url);
-      showToast(`Photo de ${type === 'cover' ? 'couverture' : 'profil'} mise à jour ! 📸`);
+      try {
+        const res = await uploadFile(e.target.files[0], 'IMAGE');
+        await usersService.updateProfile({ [field]: res.url });
+        refreshUser();
+      } catch (err) {
+        alert("Erreur d'upload");
+      }
     }
   };
 
-  const handleEditIntro = () => {
-    if (isEditingIntro) {
-      showToast("Modifications enregistrées ! ✅");
-    }
-    setIsEditingIntro(!isEditingIntro);
-  };
+  if (isLoadingUser) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-purple-600" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] pb-10 relative">
-      
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-5 duration-300 flex items-center gap-2">
-            <Check size={16} className="text-green-400" />
-            <span className="text-sm font-medium">{toastMessage}</span>
-        </div>
-      )}
+    <div className="min-h-screen bg-[#f0f2f5]">
 
-      {/* --- EN-TÊTE --- */}
-      <div className="bg-white shadow-sm mb-4">
-        <div className="max-w-6xl mx-auto">
-          
-          {/* Couverture */}
-          <div className="h-48 md:h-80 bg-gray-200 rounded-b-2xl relative group overflow-hidden">
-            {coverImage ? (
-                <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
-            ) : (
-                <div className="w-full h-full bg-gradient-to-r from-purple-400 to-indigo-500"></div>
-            )}
-            <button 
-                onClick={() => coverInputRef.current?.click()}
-                className="absolute bottom-4 right-4 bg-white/90 hover:bg-white text-gray-800 px-3 py-2 rounded-lg text-sm font-semibold shadow-md flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-            >
-              <Camera size={18} /> Changer la couverture
-            </button>
-            <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'cover')} />
-          </div>
+      <Header />
 
-          {/* Info Profil */}
-          <div className="px-4 md:px-8 pb-4">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-end -mt-12 relative mb-4">
-              
-              {/* Photo de Profil */}
-              <div className="relative group">
-                <div 
-                  className="w-40 h-40 rounded-full border-[4px] border-white bg-white overflow-hidden shadow-md cursor-pointer flex items-center justify-center bg-gray-50" 
-                  onClick={() => profileInputRef.current?.click()}
-                >
-                   {profileImage ? (
-                       <img src={profileImage} alt="Profile" className="w-full h-full object-cover group-hover:opacity-90 transition" />
-                   ) : (
-                       <div className="w-full h-full flex items-center justify-center">
-                          <Avatar alt="Antoine" />
-                       </div>
-                   )}
-                </div>
-                <button 
-                    onClick={() => profileInputRef.current?.click()}
-                    className="absolute bottom-2 right-2 bg-gray-100 hover:bg-gray-200 p-2 rounded-full border border-white shadow-sm text-gray-700 cursor-pointer"
-                >
-                  <Camera size={20} />
-                </button>
-                <input type="file" ref={profileInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'profile')} />
-              </div>
-
-              {/* Nom & Actions */}
-              <div className="flex-1 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">Antoine Emmanuel</h1>
-                <p className="text-gray-500 font-medium">1.2k amis • Développeur Fullstack</p>
-                <div className="flex -space-x-2 mt-2 cursor-pointer hover:opacity-80 transition" onClick={() => showToast("Liste d'amis (Bientôt disponible)")}>
-                  {[1,2,3].map(i => (
-                    <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-200"></div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Boutons d'action */}
-              <div className="flex gap-3 mt-4 md:mt-0">
-                <button 
-                    onClick={() => showToast("Redirection vers l'édition du profil...")}
-                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2.5 rounded-lg font-semibold flex items-center gap-2 transition"
-                >
-                  <Edit3 size={18} /> Modifier le profil
-                </button>
-                <button 
-                    onClick={() => setIsPageModalOpen(true)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-md shadow-purple-200 transition transform active:scale-95"
-                >
-                  <Plus size={18} /> Créer une Page
-                </button>
-              </div>
-            </div>
-
-            {/* --- 2. BARRE DE NAVIGATION ANIMÉE --- */}
-            <div className="border-t border-gray-200 mt-6 pt-1 flex gap-1 overflow-x-auto scrollbar-hide relative">
-              {TABS.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as TabType)}
-                    className={`px-6 py-4 font-semibold text-[15px] relative transition-colors whitespace-nowrap flex items-center gap-2 select-none outline-none
-                      ${isActive ? 'text-purple-600' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 rounded-lg'}
-                    `}
-                  >
-                    {/* Label */}
-                    <span className="relative z-10">{tab.label}</span>
-                    
-                    {/* Badge compteur (pour Mes Pages) */}
-                    {tab.count !== undefined && (
-                        <span className={`relative z-10 text-xs px-1.5 py-0.5 rounded-full transition-colors ${isActive ? 'bg-purple-100 text-purple-700' : 'bg-gray-200 text-gray-600'}`}>
-                            {tab.count}
-                        </span>
-                    )}
-
-                    {/* L'ANIMATION MAGIQUE : layoutId permet à cet élément de glisser d'un bouton à l'autre */}
-                    {isActive && (
-                      <motion.div
-                        layoutId="active-tab-underline"
-                        className="absolute bottom-0 left-0 right-0 h-[3px] bg-purple-600 rounded-t-full"
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* --- CONTENU --- */}
-      <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row gap-6">
+      <div className="pt-14 flex justify-between">
         
-        {/* Colonne Gauche */}
-        {(activeTab === 'posts' || activeTab === 'about') && (
-          <div className="w-full md:w-1/3 flex flex-col gap-4">
-            <Card className="p-4 bg-white shadow-sm rounded-xl">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Intro</h2>
-              <ul className="space-y-4 text-gray-600">
-                <li className="flex items-center gap-3">
-                  <Briefcase className="text-gray-400 flex-shrink-0" size={20} />
-                  {isEditingIntro ? <input type="text" defaultValue="Threadly Inc." className="border-b border-purple-300 outline-none w-full text-sm py-1" /> : <span>Travaille chez <strong className="text-gray-900">Threadly Inc.</strong></span>}
-                </li>
-                <li className="flex items-center gap-3">
-                  <MapPin className="text-gray-400 flex-shrink-0" size={20} />
-                  {isEditingIntro ? <input type="text" defaultValue="Paris, France" className="border-b border-purple-300 outline-none w-full text-sm py-1" /> : <span>Habite à <strong className="text-gray-900">Paris, France</strong></span>}
-                </li>
-                <li className="flex items-center gap-3">
-                  <Calendar className="text-gray-400 flex-shrink-0" size={20} />
-                  <span>A rejoint en Septembre 2023</span>
-                </li>
-              </ul>
-              <button 
-                onClick={handleEditIntro}
-                className={`w-full mt-6 font-semibold py-2 rounded-lg transition ${isEditingIntro ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
-              >
-                {isEditingIntro ? "Enregistrer" : "Modifier les infos"}
-              </button>
-            </Card>
-            
-            <Card className="p-4 bg-white shadow-sm rounded-xl">
-               <div className="flex justify-between items-center mb-4">
-                 <h2 className="text-xl font-bold text-gray-800">Photos</h2>
-                 <span onClick={() => setActiveTab('photos')} className="text-purple-600 text-sm cursor-pointer hover:underline">Tout voir</span>
-               </div>
-               <div className="grid grid-cols-3 gap-1 rounded-xl overflow-hidden">
-                  {[1,2,3,4,5,6].map(i => (
-                     <div key={i} onClick={() => showToast("Aperçu...")} className="aspect-square bg-gray-100 hover:opacity-90 cursor-pointer flex items-center justify-center group">
-                        <ImageIcon className="text-gray-300 group-hover:text-gray-400" />
-                     </div>
-                  ))}
-               </div>
-            </Card>
-          </div>
-        )}
+        {/* SIDEBAR GAUCHE */}
+        <div className="w-[300px] hidden xl:block fixed left-0">
+          <LeftSidebar friends={friends} />
+        </div>
 
-        {/* Colonne Droite */}
-        <div className={`flex-1 ${activeTab === 'pages' ? 'w-full' : ''}`}>
+        {/* CONTENU CENTRAL (PROFIL) */}
+        <main className="flex-1 xl:ml-[300px] xl:mr-[320px] max-w-4xl mx-auto p-0 md:p-4">
           
-          {activeTab === 'pages' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-              <div className="flex justify-between items-center mb-6">
-                 <h2 className="text-2xl font-bold text-gray-800">Vos Pages gérées</h2>
-                 <button onClick={() => setIsPageModalOpen(true)} className="text-purple-600 font-semibold text-sm hover:bg-purple-50 px-3 py-1 rounded-lg transition">
-                    + Créer une nouvelle Page
-                 </button>
-              </div>
+          {/* 1. SECTION COVER & AVATAR */}
+          <div className="bg-white rounded-b-2xl shadow-sm overflow-hidden mb-4">
+             <div className="relative h-48 md:h-80 bg-gray-200 group">
+                <img 
+                  src={user?.cover_photo_url || "https://images.unsplash.com/photo-1557683316-973673baf926"} 
+                  className="w-full h-full object-cover" 
+                  alt="Couverture"
+                />
+                <button onClick={() => coverInputRef.current?.click()} className="absolute bottom-4 right-4 bg-white hover:bg-gray-100 p-2 rounded-lg shadow-md flex items-center gap-2 text-sm font-bold transition">
+                   <Camera size={18} /> {isUploading ? "..." : "Changer la couverture"}
+                </button>
+                <input type="file" ref={coverInputRef} hidden onChange={(e) => handlePhotoUpload(e, 'cover_photo_url')} />
+             </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {MY_PAGES.map((page) => (
-                  <div key={page.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow group">
-                    <div className={`h-24 ${page.coverColor} relative cursor-pointer`} onClick={() => showToast(`Vers ${page.name}`)}>
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="bg-white/50 hover:bg-white p-1.5 rounded-full text-gray-600"><Settings size={16}/></button>
-                        </div>
-                    </div>
-                    <div className="px-5 pb-5 relative">
-                        <div className="-mt-10 mb-3 flex justify-between items-end">
-                            <div className="w-20 h-20 rounded-xl border-4 border-white bg-white shadow-sm flex items-center justify-center text-gray-400 bg-gray-50">
-                                <Flag size={32} />
-                            </div>
-                            <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-md uppercase tracking-wide mb-1">{page.role}</span>
-                        </div>
-                        <div className="mb-4">
-                            <h3 className="text-xl font-bold text-gray-900 leading-tight">{page.name}</h3>
-                            <p className="text-sm text-gray-500 mt-1">{page.category}</p>
-                        </div>
-                        <div className="flex items-center gap-4 py-3 border-t border-gray-50">
-                            <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                                <BarChart3 size={16} className="text-purple-500" />
-                                <span className="font-semibold text-gray-900">{page.followers}</span> abonnés
-                            </div>
-                        </div>
-                        <div className="flex gap-2 mt-4">
-                            <button onClick={() => showToast("Dashboard...")} className="flex-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold py-2 rounded-lg text-sm transition border border-purple-200">Tableau de bord</button>
-                            <button className="px-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition"><ExternalLink size={18} /></button>
-                        </div>
-                    </div>
-                  </div>
-                ))}
+             <div className="px-8 pb-6">
+                <div className="flex flex-col md:flex-row items-center md:items-end -mt-12 md:-mt-16 gap-6">
+                   <div className="relative group">
+                      <Avatar src={user?.profile_picture_url} alt={user?.first_name} size="2xl" className="border-4 border-white shadow-xl" />
+                      <button onClick={() => profileInputRef.current?.click()} className="absolute bottom-2 right-2 bg-gray-100 p-2 rounded-full border border-white shadow-sm hover:bg-gray-200 transition">
+                         <Camera size={20} />
+                      </button>
+                      <input type="file" ref={profileInputRef} hidden onChange={(e) => handlePhotoUpload(e, 'profile_picture_url')} />
+                   </div>
+                   
+                   <div className="flex-1 text-center md:text-left mb-2">
+                      <h1 className="text-3xl font-extrabold text-gray-900">
+                        {user?.first_name} {user?.last_name}
+                      </h1>
+                      <p className="text-gray-900 font-bold">{friendUsers.length} amis</p>
+                   </div>
 
-                <div onClick={() => setIsPageModalOpen(true)} className="bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center min-h-[280px] hover:border-purple-300 hover:bg-purple-50/30 transition cursor-pointer group">
-                    <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                        <Plus size={32} className="text-gray-400 group-hover:text-purple-600" />
-                    </div>
-                    <span className="font-semibold text-gray-600 group-hover:text-purple-700">Créer une nouvelle Page</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {(activeTab === 'posts' || activeTab === 'photos') && (
-             <div className="space-y-4">
-                <div className="bg-white p-8 rounded-xl shadow-sm text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                         {activeTab === 'posts' ? <Edit3 className="text-gray-400" /> : <ImageIcon className="text-gray-400" />}
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-800">{activeTab === 'posts' ? "Aucune publication" : "Aucune photo"}</h3>
+                   <div className="flex gap-2 pb-2">
+                      <button onClick={() => setIsEditingProfile(true)} className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition">
+                         <Edit3 size={18} /> Modifier
+                      </button>
+                      <button onClick={() => setShowCreatePage(true)} className="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition">
+                         <Plus size={18} /> Page
+                      </button>
+                   </div>
                 </div>
              </div>
-          )}
+
+             {/* TABS MENU */}
+             <div className="border-t px-4 flex gap-2">
+                {["posts", "about", "friends", "pages"].map((t) => (
+                  <button 
+                    key={t}
+                    onClick={() => setActiveTab(t as TabType)}
+                    className={`px-4 py-4 font-bold text-sm capitalize relative ${activeTab === t ? "text-purple-600" : "text-gray-900"}`}
+                  >
+                    {t === 'posts' ? 'Publications' : t === 'about' ? 'À propos' : t === 'friends' ? 'Amis' : 'Pages'}
+                    {activeTab === t && <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-1 bg-purple-600 rounded-t-full" />}
+                  </button>
+                ))}
+             </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4">
+             {/* COLONNE GAUCHE (INTRO) */}
+             <div className="w-full md:w-2/5 space-y-4">
+                <Card className="p-4">
+                   <h2 className="font-extrabold text-xl mb-4">Intro</h2>
+                   <div className="space-y-4 text-sm font-medium text-gray-900">
+                      <div className="flex items-center gap-3"><Briefcase size={20} className="text-gray-700" /> Travaille chez <strong>Threadly</strong></div>
+                      <div className="flex items-center gap-3"><MapPin size={20} className="text-gray-700" /> Habite à <strong>{user?.city || '—'}</strong></div>
+                      <div className="flex items-center gap-3"><Calendar size={20} className="text-gray-700" /> Membre depuis <strong>{new Date(user?.date_joined || '').getFullYear()}</strong></div>
+                   </div>
+                   <button onClick={() => setIsEditingProfile(true)} className="w-full mt-6 bg-gray-100 hover:bg-gray-200 py-2 rounded-lg font-bold transition">Modifier les infos</button>
+                </Card>
+
+                <Card className="p-4">
+                   <div className="flex justify-between items-center mb-4">
+                      <h2 className="font-extrabold text-xl">Amis</h2>
+                      <span className="text-purple-600 text-sm font-bold cursor-pointer">Voir tout</span>
+                   </div>
+                   <div className="grid grid-cols-3 gap-2">
+                      {friendUsers.slice(0, 6).map((fu) => (
+                        <div key={fu.id} className="text-center cursor-pointer" onClick={() => router.push(`/post_connexion/Profils/${fu.id}`)}>
+                           <Avatar src={getFullImageUrl(fu.profile_picture_url)} alt={fu.first_name} size="lg" className="mx-auto" />
+                           <p className="text-[10px] font-bold mt-1 truncate">{fu.first_name}</p>
+                        </div>
+                      ))}
+                   </div>
+                </Card>
+             </div>
+
+             {/* COLONNE DROITE (CONTENU DYNAMIQUE) */}
+             <div className="flex-1 space-y-4">
+                
+                {activeTab === 'posts' && (
+                  <>
+                    <Card className="p-4 flex gap-3 items-center">
+                       <Avatar src={user?.profile_picture_url} size="sm" />
+                       <button onClick={() => setShowCreatePost(true)} className="flex-1 text-left bg-gray-100 hover:bg-gray-200 py-2 px-4 rounded-full text-gray-900 font-medium transition">
+                          Exprimez-vous, {user?.first_name}...
+                       </button>
+                    </Card>
+                    
+                    {myPosts.length > 0 ? (
+                       myPosts.map(post => <PostCard key={post.id} post={post} onLike={likePost} />)
+                    ) : (
+                       <Card className="p-10 text-center text-gray-900">Aucun post pour le moment.</Card>
+                    )}
+                  </>
+                )}
+
+                {activeTab === 'pages' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {pages.map(page => (
+                       <Card key={page.id} className="p-4 flex flex-col items-center text-center">
+                          <div className="w-20 h-20 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 mb-3"><Flag size={40} /></div>
+                          <h3 className="font-bold text-lg">{page.name}</h3>
+                          <p className="text-xs text-gray-800 mb-4">{page.category}</p>
+                          <button onClick={() => router.push(`/post_connexion/pages/${page.id}`)} className="w-full bg-purple-50 text-purple-700 font-bold py-2 rounded-lg text-sm border border-purple-100 hover:bg-purple-100 transition">Gérer la page</button>
+                       </Card>
+                    ))}
+                    <button onClick={() => setShowCreatePage(true)} className="border-2 border-dashed border-gray-300 rounded-2xl p-8 flex flex-col items-center justify-center hover:bg-gray-50 transition group">
+                       <Plus size={32} className="text-gray-700 group-hover:text-purple-600" />
+                       <span className="font-bold text-gray-900 mt-2">Créer une Page</span>
+                    </button>
+                  </div>
+                )}
+
+                {activeTab === 'about' && (
+                  <Card className="p-6 space-y-8">
+                     <div>
+                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><UserIcon size={20}/> Identité</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                           <div><label className="text-[10px] font-bold text-gray-700 uppercase">Prénom</label><p className="font-bold">{user?.first_name}</p></div>
+                           <div><label className="text-[10px] font-bold text-gray-700 uppercase">Nom</label><p className="font-bold">{user?.last_name}</p></div>
+                           <div><label className="text-[10px] font-bold text-gray-700 uppercase">Email</label><p className="font-bold">{user?.email}</p></div>
+                           <div><label className="text-[10px] font-bold text-gray-700 uppercase">Ville</label><p className="font-bold">{user?.city}</p></div>
+                           <div><label className="text-[10px] font-bold text-gray-700 uppercase">Genre</label><p className="font-bold">{user?.gender}</p></div>
+                           <div><label className="text-[10px] font-bold text-gray-700 uppercase">Date de naissance</label><p className="font-bold">{user?.birth_date}</p></div>
+                        </div>
+                     </div>
+                     <div className="border-t pt-6">
+                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><Lock size={20}/> Sécurité</h3>
+                        <button onClick={() => setIsChangingPassword(true)} className="text-purple-600 font-bold text-sm hover:underline">Modifier le mot de passe</button>
+                     </div>
+                  </Card>
+                )}
+             </div>
+          </div>
+        </main>
+
+        {/* SIDEBAR DROITE */}
+        <div className="w-[320px] hidden lg:block fixed right-0">
+          <RightSidebar />
         </div>
       </div>
 
-      <CreatePage 
-         isOpen={isPageModalOpen} 
-         onClose={() => setIsPageModalOpen(false)} 
-      />
+      {/* --- MODALES --- */}
+
+      {/* 1. Modal Édition Profil */}
+      <AnimatePresence>
+        {isEditingProfile && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
+                <div className="flex justify-between items-center mb-6">
+                   <h2 className="text-xl font-extrabold">Modifier le profil</h2>
+                   <button onClick={() => setIsEditingProfile(false)}><X /></button>
+                </div>
+                <div className="space-y-4">
+                   <div><label className="text-xs font-bold text-gray-900">PRÉNOM</label><input type="text" className="w-full bg-gray-50 border p-3 rounded-xl outline-none focus:border-purple-600 transition" value={editedUser.first_name} onChange={(e) => setEditedUser({...editedUser, first_name: e.target.value})} /></div>
+                   <div><label className="text-xs font-bold text-gray-900">NOM</label><input type="text" className="w-full bg-gray-50 border p-3 rounded-xl outline-none focus:border-purple-600 transition" value={editedUser.last_name} onChange={(e) => setEditedUser({...editedUser, last_name: e.target.value})} /></div>
+                   <div><label className="text-xs font-bold text-gray-900">VILLE</label><input type="text" className="w-full bg-gray-50 border p-3 rounded-xl outline-none focus:border-purple-600 transition" value={editedUser.city} onChange={(e) => setEditedUser({...editedUser, city: e.target.value})} /></div>
+                   <div>
+                     <label className="text-xs font-bold text-gray-900">GENRE</label>
+                     <select className="w-full bg-gray-50 border p-3 rounded-xl outline-none focus:border-purple-600 transition" value={editedUser.gender} onChange={(e) => setEditedUser({...editedUser, gender: e.target.value})}>
+                       <option value="ALL">Tous</option>
+                       <option value="MALE">Homme</option>
+                       <option value="FEMALE">Femme</option>
+                     </select>
+                   </div>
+                   <div>
+                     <label className="text-xs font-bold text-gray-900">DATE DE NAISSANCE</label>
+                     <input type="date" className="w-full bg-gray-50 border p-3 rounded-xl outline-none focus:border-purple-600 transition" value={editedUser.birth_date} onChange={(e) => setEditedUser({...editedUser, birth_date: e.target.value})} />
+                   </div>
+                   <div>
+                     <label className="text-xs font-bold text-gray-900">CENTRES D'INTÉRÊT (séparés par des virgules)</label>
+                     <input type="text" className="w-full bg-gray-50 border p-3 rounded-xl outline-none focus:border-purple-600 transition" value={editedUser.interests} onChange={(e) => setEditedUser({...editedUser, interests: e.target.value})} />
+                   </div>
+                   <button onClick={handleUpdateInfo} className="w-full bg-purple-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-purple-200 mt-4">Enregistrer les modifications</button>
+                </div>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modales de création */}
+      <CreatePostModal isOpen={showCreatePost} onClose={() => setShowCreatePost(false)} onPostCreated={() => { setShowCreatePost(false); refreshFeed(); }} />
+      <CreatePageModal isOpen={showCreatePage} onClose={() => setShowCreatePage(false)} onPageCreated={() => { setShowCreatePage(false); refreshPages(); }} />
 
     </div>
   );
