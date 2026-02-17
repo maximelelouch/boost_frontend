@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { getFullImageUrl } from "@/utils/utils";
 
 interface AvatarProps {
   src?: string | null;
@@ -30,7 +31,7 @@ export const Avatar = ({
   // 1. Si src existe, on l'utilise.
   // 2. Sinon, on génère un avatar Dicebear basé sur le nom (alt).
   const finalSrc = src 
-    ? src 
+    ? getFullImageUrl(src)
     : `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(alt)}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 
   return (

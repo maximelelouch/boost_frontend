@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import PostCard from '@/features/post_connexion/Accueils/components/PostCard';
 import { Avatar } from '@/components/ui/Avatar';
-import { usePosts, useUser, useFriends, useProfileSocial } from '@lib/hooks/useAPI';
+import { useUser, useFriends, useProfileSocial, useUserPosts } from '@lib/hooks/useAPI';
 import { usersService, postService, friendService } from '@lib/api/services';
 import type { User } from '@lib/types/api.types';
 import { getFullImageUrl } from '@/utils/utils';
@@ -16,7 +16,7 @@ export default function UserProfilePage() {
   const router = useRouter();
   const userId = params.id as string | undefined;
   const { user: currentUser } = useUser();
-  const { posts, isLoading: isLoadingPosts } = usePosts();
+  const { posts: userPosts, isLoading: isLoadingPosts } = useUserPosts(userId);
   const { friends, requests, sentRequests, cancelRequest, refresh: refreshFriends } = useFriends();
   const { friends: profileFriends, mutualFriends, isLoading: isLoadingProfileSocial } = useProfileSocial(userId);
   const [profileUser, setProfileUser] = useState<User | null>(null);
@@ -147,11 +147,6 @@ export default function UserProfilePage() {
       setIsFriendActionLoading(false);
     }
   };
-  const userPosts = useMemo(() => {
-    if (!profileUser) return [];
-    return posts.filter((p) => p.author?.id === profileUser.id);
-  }, [posts, profileUser]);
-
   if (loadingUser || isLoadingPosts || isLoadingProfileSocial) {
     return <div className="text-center p-10">Chargement du profil...</div>;
   }

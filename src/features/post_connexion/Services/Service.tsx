@@ -331,7 +331,7 @@ export default function Publicite() {
                                     className={`flex items-center gap-4 p-3 rounded-lg border cursor-pointer transition-colors ${selectedPageId === page.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
                                 >
                                     <div className="w-12 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                                        {page.profile_picture_url ? <img src={page.profile_picture_url} alt="" className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full text-xs text-gray-400">Img</div>}
+                                        {page.profile_picture_url ? <img src={getFullImageUrl(page.profile_picture_url)} alt="" className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full text-xs text-gray-400">Img</div>}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm text-gray-800 truncate">{page.name}</p>

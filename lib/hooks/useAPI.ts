@@ -115,6 +115,33 @@ export function useUser() {
   return { user, isLoading, error, refresh: fetchUser };
 }
 
+export function useUserPosts(userId?: string) {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPosts = useCallback(async () => {
+    if (!userId) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await usersService.getPosts(userId);
+      setPosts(Array.isArray(data) ? data : (data as any)?.results || []);
+    } catch (err) {
+      console.error('Erreur lors de la récupération des posts utilisateur:', err);
+      setError("Impossible de charger les publications");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  return { posts, isLoading, error, refresh: fetchPosts };
+}
+
 // --- HOOK PUBLICATIONS (FEED) ---
 export function usePosts() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -123,6 +150,11 @@ export function usePosts() {
   
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+
+  const prependPost = (post: Post) => {
+    if (!post?.id) return;
+    setPosts((prev) => [post, ...prev.filter((p) => p.id !== post.id)]);
+  };
 
   const fetchFeed = async (pageNum: number = 1, isRefresh: boolean = false) => {
     if (isLoading || (!hasMore && !isRefresh)) return;
@@ -158,7 +190,7 @@ export function usePosts() {
 
   useEffect(() => { fetchFeed(1, true); }, []);
 
-  return { posts, isLoading, error, loadMore, hasMore, likePost, refresh: () => fetchFeed(1, true) };
+  return { posts, isLoading, error, loadMore, hasMore, likePost, prependPost, refresh: () => fetchFeed(1, true) };
 }
 
 // --- HOOK POSTS BOOSTABLES (MES POSTS + POSTS DE MES PAGES) ---

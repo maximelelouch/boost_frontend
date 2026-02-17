@@ -38,6 +38,7 @@ export default function HomePage() {
     isLoading: postsLoading, 
     error: postsError, 
     likePost, 
+    prependPost,
     refresh: refreshFeed,
     loadMore,
     hasMore 
@@ -77,7 +78,10 @@ export default function HomePage() {
   // Handlers pour les créations
   const handlePostCreated = (post: Post) => {
     setShowCreatePost(false);
-    refreshFeed(); // Recharge le feed dynamiquement depuis Django
+    if (post) prependPost(post);
+    setTimeout(() => {
+      refreshFeed();
+    }, 250);
   };
 
   const handlePageCreated = () => {

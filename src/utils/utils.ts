@@ -1,12 +1,25 @@
 export const getFullImageUrl = (url: string | undefined | null): string => {
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  if (!url) {
-    return '/default-avatar.svg';
+  const backendUrlRaw = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+  const backendUrl = backendUrlRaw.replace(/\/+$/, '');
+
+  const trimmed = (url || '').trim();
+  if (!trimmed) return '/default-avatar.svg';
+
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('blob:')
+  ) {
+    return trimmed;
   }
-  if (url.startsWith('http')) {
-    return url;
+
+  if (trimmed.startsWith('//')) {
+    return `https:${trimmed}`;
   }
-  return `${backendUrl}${url}`;
+
+  const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${backendUrl}${path}`;
 };
 
  export type EntityHrefKind = 'user' | 'page';
