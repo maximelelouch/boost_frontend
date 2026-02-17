@@ -3,10 +3,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '@lib/hooks/useAPI';
 import Link from 'next/link';
-import { Mail, Lock, Loader2, ArrowRight, Heart, MessageCircle, Share2, MoreHorizontal, ThumbsUp } from 'lucide-react';
+// Ajout de Eye et EyeOff pour le bouton mot de passe
+import { Mail, Lock, Loader2, ArrowRight, Heart, MessageCircle, Share2, MoreHorizontal, ThumbsUp, Truck, MapPin, Briefcase, Bus, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const { login, isLoading, error } = useAuth();
+  // Nouvel état pour gérer l'affichage du mot de passe (Logique UI uniquement)
+  const [showPassword, setShowPassword] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,11 +32,11 @@ export default function LoginPage() {
     <div className="flex min-h-screen w-full font-sans bg-[#0A0A0B] text-white selection:bg-violet-500/30">
       
       {/* =================================================================
-          PARTIE GAUCHE : VISUEL "FEED SOCIAL" (Facebook Style)
+          PARTIE GAUCHE : VISUEL "FEED SOCIAL LOGISTIQUE & TRANSPORT"
          ================================================================= */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col items-center justify-center p-12">
         
-        {/* Fond et Aurores (Inchangés) */}
+        {/* Fond et Aurores */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-violet-600/40 rounded-full blur-[120px] animate-blob mix-blend-screen" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-fuchsia-600/30 rounded-full blur-[120px] animate-blob animation-delay-2000 mix-blend-screen" />
@@ -44,50 +47,46 @@ export default function LoginPage() {
             {/* Le Post en Verre */}
             <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-5 shadow-2xl ring-1 ring-white/5 transform transition-all hover:scale-[1.01] duration-500">
                 
-                {/* 1. Header du Post (Utilisateur) */}
+                {/* 1. Header du Post (Agence de voyage) */}
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                        {/* Avatar */}
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-violet-500 p-[2px]">
-                            <div className="w-full h-full rounded-full bg-black border-2 border-transparent flex items-center justify-center overflow-hidden">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" className="w-full h-full" />
+                        {/* Avatar / Logo Entreprise */}
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-700 p-[2px]">
+                            <div className="w-full h-full rounded-full bg-[#18181B] border-2 border-transparent flex items-center justify-center overflow-hidden">
+                                <span className="font-bold text-[10px] text-white">FNX</span>
                             </div>
                         </div>
                         <div>
-                            <div className="text-sm font-semibold text-white">Alexandre Dumas</div>
+                            <div className="text-sm font-semibold text-white">Finexs Voyages</div>
                             <div className="text-[10px] text-gray-400 flex items-center gap-1">
-                                il y a 2h • <span className="bg-white/20 w-3 h-3 rounded-full flex items-center justify-center">🌍</span>
+                                il y a 15 min • <span className="bg-white/20 w-3 h-3 rounded-full flex items-center justify-center text-[8px]">🌍</span>
                             </div>
                         </div>
                     </div>
                     <MoreHorizontal className="text-gray-500 w-5 h-5" />
                 </div>
 
-                {/* 2. Contenu du Post */}
+                {/* 2. Contenu du Post (Thème Voyage Yaoundé-Douala) */}
                 <div className="mb-4 space-y-3">
                     <p className="text-sm text-gray-200 leading-relaxed">
-                        Quel plaisir de retrouver la communauté Threadly ! L interface est incroyable. 🚀 <span className="text-violet-400">#NewDesign #Community</span>
+                        Embarquement terminé à l'agence de Mvan ! Notre bus VIP de 14h00 en direction de Douala est prêt pour le départ. Bon voyage à tous nos passagers dans le plus grand confort. 🚌✨ <span className="text-violet-400">#Transport #Yaoundé #Douala #VIP</span>
                     </p>
                     
-                   {/* Placeholder Média (Méthode Infaillible) */}
-                    {/* J'ai ajouté 'h-48' et 'min-h-[200px]' pour forcer la hauteur si aspect-video ne marche pas */}
                     <div className="w-full aspect-video h-56 min-h-[220px] rounded-xl border border-white/5 relative overflow-hidden group cursor-pointer shadow-lg shadow-black/30">
                         
-                        {/* IMAGE EN BACKGROUND (Force l'affichage) */}
-                        <div 
-                            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                            style={{ 
-                                backgroundImage: `url('https://images.unsplash.com/photo-1518182170546-0766aaef06a7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80')`,
-                                opacity: 0.9 
-                            }}
+                        {/* IMAGE RÉALISTE : Vrai bus Finexs */}
+                        <img 
+                            src="https://commons.wikimedia.org/wiki/Special:FilePath/Bus_Finexs_Voyage.jpg?width=800" 
+                            alt="Véritable Bus Finexs au Cameroun" 
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90"
                         />
                         
                         {/* Dégradé pour la lisibilité */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
 
-                        {/* Tag Localisation */}
+                        {/* Tag Localisation / Info */}
                         <div className="absolute bottom-3 left-3 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full text-xs text-white border border-white/10 flex items-center gap-2 shadow-sm z-10">
-                             <span>📍</span> Kribi, Cameroun
+                            <MapPin className="w-3 h-3 text-violet-400" /> Agence de Mvan, Yaoundé
                         </div>
                     </div>
                 </div>
@@ -96,11 +95,11 @@ export default function LoginPage() {
                 <div className="border-t border-white/10 pt-3 flex items-center justify-between text-gray-400">
                     <button className="flex items-center gap-2 hover:text-red-400 transition-colors group">
                         <Heart className="w-5 h-5 group-hover:fill-red-400 transition-all" />
-                        <span className="text-xs">42 J aime</span>
+                        <span className="text-xs">342 J'aime</span>
                     </button>
                     <button className="flex items-center gap-2 hover:text-violet-400 transition-colors">
                         <MessageCircle className="w-5 h-5" />
-                        <span className="text-xs">Commenter</span>
+                        <span className="text-xs">28 Commentaires</span>
                     </button>
                     <button className="flex items-center gap-2 hover:text-white transition-colors">
                         <Share2 className="w-5 h-5" />
@@ -109,19 +108,19 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            {/* Carte Flottante : Suggestion d'ami (Typique Facebook) */}
+            {/* Carte Flottante : Suggestion de connexion (Autre agence connue) */}
             <div className="absolute -right-12 bottom-20 bg-[#18181B] border border-white/10 p-3 rounded-xl shadow-2xl flex items-center gap-3 animate-float max-w-[200px]">
                 <div className="relative">
-                    <div className="w-10 h-10 rounded-full bg-gray-700 overflow-hidden">
-                         <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" alt="Friend" />
+                    <div className="w-10 h-10 rounded-full bg-gray-700 overflow-hidden flex items-center justify-center p-2">
+                         <Bus className="text-gray-300 w-full h-full" />
                     </div>
                     <div className="absolute -bottom-1 -right-1 bg-violet-600 rounded-full p-0.5 border-2 border-[#18181B]">
                         <ThumbsUp className="w-3 h-3 text-white" />
                     </div>
                 </div>
                 <div>
-                    <div className="text-xs font-bold text-white">Sarah M.</div>
-                    <div className="text-[10px] text-gray-400">2 amis en commun</div>
+                    <div className="text-xs font-bold text-white">Buca Voyages</div>
+                    <div className="text-[10px] text-gray-400">Suggestion de page</div>
                 </div>
                 <button className="bg-violet-600/20 text-violet-400 p-1.5 rounded-lg hover:bg-violet-600 hover:text-white transition-colors">
                     <span className="text-xs font-bold">+</span>
@@ -130,39 +129,40 @@ export default function LoginPage() {
         </div>
         
         <div className="absolute bottom-10 text-center z-10">
-             <p className="text-white/40 text-sm font-light tracking-wide">Connectez-vous à ce qui compte.</p>
+             <p className="text-white/40 text-sm font-light tracking-wide">Développez votre réseau d'affaires.</p>
         </div>
       </div>
 
       {/* =================================================================
-          PARTIE DROITE : FORMULAIRE LOGIN (Inchangé, juste le rappel du layout)
+          PARTIE DROITE : FORMULAIRE LOGIN
          ================================================================= */}
       <div className="flex flex-1 flex-col items-center justify-center p-6 bg-black lg:bg-[#0A0A0B]">
-        {/* ... (Copier le même formulaire que la version précédente ici) ... */}
-        {/* Pour gagner de la place, je ne remets pas tout le code du formulaire de droite s'il n'a pas changé,
-            mais si tu veux je peux le remettre. Utilise le formulaire "Continuer avec Google" centré. */}
          <div className="w-full max-w-[400px]">
           
           <div className="lg:hidden flex items-center gap-2 mb-12">
-            <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center font-bold">Th</div>
-            <span className="font-bold text-xl">threadly.</span>
+            <div className="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center font-bold">
+                <Truck className="w-5 h-5 text-white" />
+            </div>
+            <span className="font-bold text-xl">LogisLink.</span>
           </div>
 
           <div className="mb-8">
             <h1 className="text-3xl font-bold tracking-tight mb-2">Bon retour.</h1>
-            <p className="text-gray-400">Heureux de vous revoir sur Threadly.</p>
+            <p className="text-gray-400">Heureux de vous revoir sur LogisLink.</p>
           </div>
 
           <form onSubmit={onSubmit} className="space-y-5">
             <div className="group">
-                <label className="block text-xs font-medium text-gray-500 mb-1.5 ml-1 uppercase tracking-wider">Email</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5 ml-1 uppercase tracking-wider">Email professionnel</label>
                 <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <Mail className="h-5 w-5 text-gray-500 group-focus-within:text-violet-400 transition-colors" />
                     </div>
-                    <input type="email" name="email" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="nom@exemple.com" />
+                    <input type="email" name="email" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="nom@entreprise.com" />
                 </div>
             </div>
+            
+            {/* CHAMP MOT DE PASSE AVEC BOUTON AFFICHER/MASQUER */}
             <div className="group">
                 <div className="flex items-center justify-between mb-1.5 ml-1">
                     <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Mot de passe</label>
@@ -172,18 +172,39 @@ export default function LoginPage() {
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <Lock className="h-5 w-5 text-gray-500 group-focus-within:text-violet-400 transition-colors" />
                     </div>
-                    <input type="password" name="password" required className="block w-full pl-11 pr-4 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" placeholder="••••••••" />
+                    <input 
+                        type={showPassword ? "text" : "password"} 
+                        name="password" 
+                        required 
+                        // J'ai ajouté pr-12 pour laisser de la place au bouton sur la droite
+                        className="block w-full pl-11 pr-12 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" 
+                        placeholder="••••••••" 
+                    />
+                    {/* Le fameux bouton */}
+                    <button 
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-violet-400 transition-colors"
+                    >
+                        {showPassword ? (
+                            <EyeOff className="h-5 w-5" />
+                        ) : (
+                            <Eye className="h-5 w-5" />
+                        )}
+                    </button>
                 </div>
             </div>
+            {/* FIN CHAMP MOT DE PASSE */}
+
             <button type="submit" disabled={isLoading} className="relative w-full py-3.5 bg-white text-black font-semibold rounded-xl hover:bg-gray-100 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 overflow-hidden group shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(139,92,246,0.3)] mt-2">
                 {isLoading ? <Loader2 className="animate-spin h-5 w-5" /> : (
-                   <><span>Se connecter</span><ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
+                    <><span>Se connecter</span><ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
                 )}
                 <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent z-10" />
             </button>
           </form>
 
-                    {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
+          {error && <p className="text-red-500 text-sm text-center mb-4 mt-4">{error}</p>}
 
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/10"></span></div>
@@ -198,7 +219,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-8 text-center">
-            <p className="text-sm text-gray-500">Pas encore de compte ? <Link href="/pre_connexion/Inscriptions" className="text-violet-400 hover:text-violet-300 font-medium transition-colors">Rejoindre Threadly</Link></p>
+            <p className="text-sm text-gray-500">Pas encore de compte ? <Link href="/pre_connexion/Inscriptions" className="text-violet-400 hover:text-violet-300 font-medium transition-colors">Rejoindre LogisLink</Link></p>
           </div>
 
         </div>

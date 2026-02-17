@@ -79,7 +79,7 @@ export const LeftSidebar = ({ friends = [] }: LeftSidebarProps) => {
 
       <div className="mt-4 border-t pt-4 text-xs text-gray-500">
         <p>Confidentialité · Conditions · Publicité · Cookies </p>
-        <p className="mt-2">Threadly © 2024</p>
+        <p className="mt-2">LogisLink © 2026</p>
       </div>
     </aside>
   );

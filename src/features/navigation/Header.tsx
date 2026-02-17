@@ -79,7 +79,7 @@ export function Header() {
     <header className="fixed top-0 left-0 right-0 h-14 bg-white shadow-sm flex items-center justify-between px-4 z-[60]">
       <div className="flex items-center gap-2">
         <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-purple-200 cursor-pointer">
-          Th
+          Log
         </div>
         <div ref={searchRef} className="relative hidden md:block">
           <form onSubmit={handleSearchSubmit}>
