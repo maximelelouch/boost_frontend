@@ -21,7 +21,7 @@ import CreatePageModal from '@/features/post_connexion/Accueils/components/Creat
 import { Header } from '@/features/navigation';
 
 // --- IMPORT API SERVICES & HOOKS ---
-import { useUser, usePosts, usePages, useFriends, useUpload } from '@lib/hooks/useAPI';
+import { useUser, usePosts, usePages, useFriends, useUpload, useUserPosts } from '@lib/hooks/useAPI';
 import { usersService } from '@lib/api/services';
 import type { User } from '@lib/types/api.types';
 import { getFullImageUrl } from '@/utils/utils';
@@ -33,7 +33,8 @@ export default function ProfilePage() {
   
   // Hooks de données
   const { user, isLoading: isLoadingUser, refresh: refreshUser } = useUser();
-  const { posts, likePost, refresh: refreshFeed } = usePosts();
+  const { likePost } = usePosts();
+  const { posts: myPosts, refresh: refreshMyPosts, isLoading: isLoadingMyPosts } = useUserPosts(user?.id);
   const { pages, refresh: refreshPages } = usePages();
   const { friends, requests } = useFriends();
   const { uploadFile, isUploading } = useUpload();
@@ -51,9 +52,6 @@ export default function ProfilePage() {
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
-
-  // Filtrer les posts pour n'avoir que les miens
-  const myPosts = posts.filter(p => p.author.id === user?.id);
 
   const friendUsers: User[] = useMemo(() => {
     if (!user?.id) return [];
@@ -118,7 +116,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoadingUser) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-purple-600" /></div>;
+  if (isLoadingUser || isLoadingMyPosts) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-purple-600" /></div>;
 
   return (
     <div className="min-h-screen bg-[#f0f2f5]">
@@ -139,7 +137,7 @@ export default function ProfilePage() {
           <div className="bg-white rounded-b-2xl shadow-sm overflow-hidden mb-4">
              <div className="relative h-48 md:h-80 bg-gray-200 group">
                 <img 
-                  src={user?.cover_photo_url || "https://images.unsplash.com/photo-1557683316-973673baf926"} 
+                  src={user?.cover_photo_url ? getFullImageUrl(user.cover_photo_url) : "https://images.unsplash.com/photo-1557683316-973673baf926"} 
                   className="w-full h-full object-cover" 
                   alt="Couverture"
                 />
@@ -326,7 +324,7 @@ export default function ProfilePage() {
       </AnimatePresence>
 
       {/* Modales de création */}
-      <CreatePostModal isOpen={showCreatePost} onClose={() => setShowCreatePost(false)} onPostCreated={() => { setShowCreatePost(false); refreshFeed(); }} />
+      <CreatePostModal isOpen={showCreatePost} onClose={() => setShowCreatePost(false)} onPostCreated={() => { setShowCreatePost(false); refreshMyPosts(); }} />
       <CreatePageModal isOpen={showCreatePage} onClose={() => setShowCreatePage(false)} onPageCreated={() => { setShowCreatePage(false); refreshPages(); }} />
 
     </div>

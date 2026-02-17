@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { UserPlus, MoreHorizontal, Gift, Search, X } from "lucide-react";
+import { UserPlus, Gift } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar"; 
 import { useRouter } from 'next/navigation';
 import { useFriends, useUser } from '@lib/hooks/useAPI';
@@ -241,50 +241,6 @@ export const RightSidebar = () => {
               );
             })}
           </div>
-        </div>
-
-        {/* --- 3. PUBLICITÉ --- */}
-        <div>
-             <div className="flex justify-between items-center mb-2 px-1">
-                <h3 className="font-semibold text-gray-900 text-sm">Sponsorisé</h3>
-            </div>
-            <div className="flex items-center gap-3 cursor-pointer group p-2 rounded-xl hover:bg-gray-100 transition">
-                <div className="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                    <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80" alt="Shoe" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                </div>
-                <div>
-                    <p className="text-sm font-semibold text-gray-900 leading-tight group-hover:text-purple-600 transition-colors">Nike Air Max - Collection 2024</p>
-                    <p className="text-xs text-gray-800 mt-1">nike.com</p>
-                </div>
-            </div>
-        </div>
-
-        {/* --- 4. CONTACTS --- */}
-        <div className="pt-2 border-t border-gray-200">
-            <div className="flex justify-between items-center mb-4 px-1">
-                <h3 className="font-semibold text-gray-900 text-sm">Contacts</h3>
-                <div className="flex gap-2 text-gray-700">
-                    <Search size={16} className="cursor-pointer hover:text-gray-900" />
-                    <MoreHorizontal size={16} className="cursor-pointer hover:text-gray-900" />
-                </div>
-            </div>
-
-            <ul className="space-y-1">
-                {['Jean Dupont', 'Marie Curie', 'Thomas Pesquet', 'Elon Musk'].map((name, i) => (
-                    <li key={i} className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg cursor-pointer transition group">
-                        <div className="relative">
-                            {/* CORRECTION ICI : Div parent pour la taille */}
-                            <div className="w-9 h-9 rounded-full overflow-hidden">
-                                <Avatar alt={name} />
-                            </div>
-                            
-                            {/* Point vert (En ligne) */}
-                            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
-                        </div>
-                        <span className="text-sm font-medium text-gray-700 group-hover:text-black">{name}</span>
-                    </li>
-                ))}
-            </ul>
         </div>
 
       </div>

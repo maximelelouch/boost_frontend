@@ -45,6 +45,10 @@ export const usersService = {
   getById: (id: string) => 
     apiClient.get<T.User>(`${endpoints.coreUsers}${id}/`),
 
+  // Récupérer les posts d'un utilisateur (profil)
+  getPosts: (id: string) =>
+    apiClient.get<T.Post[]>(`${endpoints.coreUsers}${id}/posts/`),
+
   // Récupérer les amis d'un utilisateur (core)
   getFriends: (userId: string) =>
     apiClient.get<T.User[]>(`${endpoints.coreUsers}${userId}/friends/`),
