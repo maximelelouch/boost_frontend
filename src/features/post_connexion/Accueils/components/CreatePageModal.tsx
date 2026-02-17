@@ -48,24 +48,30 @@ export default function CreatePageModal({ isOpen, onClose, onPageCreated }: Crea
       const payload: any = {
         name: formData.name.trim(),
         category: formData.category,
-        description: formData.bio.trim() || " ", // Correspond au champ 'description' du modèle
+        description: formData.bio.trim() || "Page créée via BoostAPP", // Description par défaut si vide
         profile_picture_url: null, // Par défaut null
         cover_photo_url: null     // Par défaut null
       };
 
       // 2. Upload des images vers Django si sélectionnées
       if (coverFile) {
+        console.log("📤 Upload cover file...");
         const res = await uploadService.file(coverFile);
         payload.cover_photo_url = res.url;
+        console.log("✅ Cover uploaded:", res.url);
       }
       if (avatarFile) {
+        console.log("📤 Upload avatar file...");
         const res = await uploadService.file(avatarFile);
         payload.profile_picture_url = res.url;
+        console.log("✅ Avatar uploaded:", res.url);
       }
 
       // 3. Appel API vers le Backend
-      console.log("📡 Envoi à l'API:", payload);
+      console.log("📡 Envoi à l'API pages:", payload);
+      console.log("📋 Payload détaillé:", JSON.stringify(payload, null, 2));
       const newPage = await pageService.create(payload);
+      console.log("✅ Page créée avec succès:", newPage);
 
       // 4. Succès
       if (onPageCreated) onPageCreated(newPage);
@@ -75,8 +81,19 @@ export default function CreatePageModal({ isOpen, onClose, onPageCreated }: Crea
       router.push(`/post_connexion/pages/${newPage.id}`);
 
     } catch (error: any) {
-      console.error('❌ Erreur 400 détaillée:', error.response?.data);
-      alert("Erreur de création. Vérifiez que le nom n'est pas déjà pris.");
+      console.error('❌ Erreur complète:', error);
+      console.error('❌ Erreur response:', error.response?.data);
+      console.error('❌ Erreur status:', error.response?.status);
+      console.error('❌ Erreur headers:', error.response?.headers);
+      
+      // Message d'erreur plus précis
+      if (error.response?.status === 401) {
+        alert("Session expirée. Veuillez vous reconnecter.");
+        // Redirection vers login
+        window.location.href = '/';
+      } else {
+        alert(`Erreur de création: ${error.response?.data?.detail || 'Erreur inconnue'}`);
+      }
     } finally {
       setIsCreating(false);
     }
