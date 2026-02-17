@@ -21,9 +21,28 @@ interface PageManagementProps {
 
 export default function PageManagement({ initialPage, initialPosts, onBack, refresh, isOwner = true }: PageManagementProps) {
   const [page, setPage] = useState<Page>(initialPage);
+  const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'posts' | 'about' | 'subscribers'>('home');
+
+  // Fonction pour rafraîchir les publications de la page
+  const refreshPosts = async () => {
+    try {
+      const postsResponse = await pageService.getPostsByPage(initialPage.id);
+      const newPosts = Array.isArray(postsResponse) 
+        ? postsResponse 
+        : (postsResponse as any).results || [];
+      setPosts(newPosts);
+    } catch (error: any) {
+      console.error('Erreur lors du rafraîchissement des publications:', error);
+      // En cas d'erreur 500, on ne vide pas les publications existantes
+      if (error.response?.status !== 500) {
+        // On ne vide les posts qu'en cas d'erreur différente de 500
+        setPosts([]);
+      }
+    }
+  };
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
@@ -43,8 +62,8 @@ export default function PageManagement({ initialPage, initialPosts, onBack, refr
   const coverImg = (page as any)?.cover_photo_url;
   const profileImg = (page as any)?.profile_picture_url;
 
-  const totalLikes = initialPosts.reduce((acc, p) => acc + (p.likes_count || 0), 0);
-  const totalComments = initialPosts.reduce((acc, p) => acc + (p.comments_count || 0), 0);
+  const totalLikes = posts.reduce((acc, p) => acc + (p.likes_count || 0), 0);
+  const totalComments = posts.reduce((acc, p) => acc + (p.comments_count || 0), 0);
 
   useEffect(() => {
     const loadSubscriptionState = async () => {
@@ -224,7 +243,7 @@ export default function PageManagement({ initialPage, initialPosts, onBack, refr
                   <span className="hidden xs:inline">•</span>
                   <span className="font-semibold">{subscribers} abonnés</span>
                   <span className="hidden xs:inline">•</span>
-                  <span className="font-semibold">{initialPosts.length} publications</span>
+                  <span className="font-semibold">{posts.length} publications</span>
                 </div>
                 {initialPage.description ? (
                   <p className="mt-2 md:mt-3 text-sm md:text-base text-gray-600 font-medium max-w-2xl leading-relaxed line-clamp-2 md:line-clamp-none">
@@ -348,7 +367,7 @@ export default function PageManagement({ initialPage, initialPosts, onBack, refr
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs md:text-sm font-semibold text-gray-500">Publications</span>
-                <span className="text-xs md:text-sm font-bold text-gray-800">{initialPosts.length}</span>
+                <span className="text-xs md:text-sm font-bold text-gray-800">{posts.length}</span>
               </div>
             </div>
           </div>
@@ -475,7 +494,7 @@ export default function PageManagement({ initialPage, initialPosts, onBack, refr
               )}
 
               {/* Posts List */}
-              {initialPosts.length === 0 ? (
+              {posts.length === 0 ? (
                 <div className="bg-white p-8 md:p-16 text-center border-2 border-dashed border-gray-200 rounded-xl md:rounded-2xl">
                   <Rocket className="mx-auto text-gray-300 mb-4" size={40} />
                   <h3 className="font-bold text-lg md:text-xl text-gray-900">Aucune publication</h3>
@@ -493,7 +512,7 @@ export default function PageManagement({ initialPage, initialPosts, onBack, refr
                 </div>
               ) : (
                 <div className="space-y-3 md:space-y-4">
-                  {initialPosts.map(post => (
+                  {posts.map(post => (
                     <PostCard 
                       key={post.id} 
                       post={post} 
@@ -514,8 +533,16 @@ export default function PageManagement({ initialPage, initialPosts, onBack, refr
         <CreatePostModal 
           isOpen={showCreatePost} 
           onClose={() => setShowCreatePost(false)} 
-          onPostCreated={() => { 
+          onPostCreated={async (newPost) => { 
             setShowCreatePost(false); 
+            if (newPost) {
+              setPosts(prev => [newPost, ...prev]);
+            }
+            try {
+              await refreshPosts();
+            } catch (error) {
+              console.warn('Refresh posts failed, but keeping local state:', error);
+            }
             refresh(); 
           }}
           pageContext={initialPage}
