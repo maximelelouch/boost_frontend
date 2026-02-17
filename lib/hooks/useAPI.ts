@@ -1,5 +1,5 @@
 // lib/hooks/useAPI.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   authService, 
@@ -221,7 +221,7 @@ export function useBoostablePosts() {
 }
 
 // --- HOOK BOOSTS ---
-export function useBoosts() {
+export function useBoosts(autoFetch = true) {
   const [boosts, setBoosts] = useState<Boost[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -259,8 +259,10 @@ export function useBoosts() {
   };
 
   useEffect(() => {
-    fetchBoosts();
-  }, []);
+    if (autoFetch) {
+      fetchBoosts();
+    }
+  }, [autoFetch]);
 
   return { boosts, isLoading, error, refresh: fetchBoosts, createBoost };
 }
@@ -492,6 +494,44 @@ export function useFriends() {
   };
 }
 
+// --- HOOK AMIS MUTUELS AVEC CACHE ---
+export function useMutualFriendsCached(userId?: string) {
+  const [mutualCount, setMutualCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const cache = useRef<Map<string, number>>(new Map());
+
+  const fetchMutualFriends = useCallback(async (targetUserId: string) => {
+    // Vérifier le cache d'abord
+    if (cache.current.has(targetUserId)) {
+      setMutualCount(cache.current.get(targetUserId)!);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const data = await usersService.getMutualFriends(targetUserId);
+      const count = Array.isArray(data) ? data.length : (data as any)?.results?.length || 0;
+      
+      // Mettre en cache
+      cache.current.set(targetUserId, count);
+      setMutualCount(count);
+    } catch (err) {
+      console.error('Erreur lors de la récupération des amis mutuels:', err);
+      setMutualCount(0);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (userId) {
+      fetchMutualFriends(userId);
+    }
+  }, [userId, fetchMutualFriends]);
+
+  return { mutualCount, isLoading, refresh: () => userId && fetchMutualFriends(userId) };
+}
+
 export function useBoostAction() {
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -522,7 +562,11 @@ export function useUpload() {
   const uploadFile = async (file: File, type: 'IMAGE' | 'VIDEO' = 'IMAGE') => {
     setIsUploading(true);
     try {
-      return await uploadService.file(file, type);
+      const result = await uploadService.file(file);
+      return result;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
     } finally {
       setIsUploading(false);
     }
@@ -531,14 +575,14 @@ export function useUpload() {
   return { uploadFile, isUploading };
 }
 
-// --- HOOK RECHERCHE ---
-export function useSearch(query: string | null) {
+// --- HOOK SEARCH ---
+export function useSearch() {
   const [results, setResults] = useState<SearchResults | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchResults = useCallback(async () => {
-    if (!query) {
+  const search = async (query: string) => {
+    if (!query.trim()) {
       setResults(null);
       return;
     }
@@ -549,97 +593,11 @@ export function useSearch(query: string | null) {
       const data = await searchService.search(query);
       setResults(data);
     } catch (err) {
-      setError('Erreur lors de la récupération des résultats.');
-      console.error(err);
+      setError('Erreur lors de la recherche');
     } finally {
       setIsLoading(false);
     }
-  }, [query]);
-
-  useEffect(() => {
-    fetchResults();
-  }, [fetchResults]);
-
-  return { results, isLoading, error, refresh: fetchResults };
-}
-
-// --- HOOK SOCIAL PROFIL (amis + amis en commun) ---
-export function useProfileSocial(userId: string | undefined) {
-  const [friends, setFriends] = useState<User[]>([]);
-  const [mutualFriends, setMutualFriends] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchSocial = useCallback(async () => {
-    if (!userId) return;
-    setIsLoading(true);
-    try {
-      const [friendsData, mutualData] = await Promise.all([
-        usersService.getFriends(userId),
-        usersService.getMutualFriends(userId),
-      ]);
-      setFriends(friendsData || []);
-      setMutualFriends(mutualData || []);
-    } catch (err) {
-      console.error('Erreur chargement social profile', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    fetchSocial();
-  }, [fetchSocial]);
-
-  return { friends, mutualFriends, isLoading, refresh: fetchSocial };
-}
-
-type MutualFriendsCacheEntry = {
-  count: number;
-  preview: User[];
-  fetchedAt: number;
-};
-
-const mutualFriendsCache = new Map<string, MutualFriendsCacheEntry>();
-const MUTUAL_FRIENDS_CACHE_TTL_MS = 2 * 60 * 1000;
-
-export function useMutualFriendsCached(targetUserId: string | undefined, previewLimit: number = 4) {
-  const [entry, setEntry] = useState<MutualFriendsCacheEntry | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const fetchMutual = useCallback(async () => {
-    if (!targetUserId) return;
-
-    const cached = mutualFriendsCache.get(targetUserId);
-    if (cached && Date.now() - cached.fetchedAt < MUTUAL_FRIENDS_CACHE_TTL_MS) {
-      setEntry(cached);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const mutual = await usersService.getMutualFriends(targetUserId);
-      const normalized: MutualFriendsCacheEntry = {
-        count: mutual?.length || 0,
-        preview: (mutual || []).slice(0, previewLimit),
-        fetchedAt: Date.now(),
-      };
-      mutualFriendsCache.set(targetUserId, normalized);
-      setEntry(normalized);
-    } catch (err) {
-      console.error('Erreur mutual friends', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [previewLimit, targetUserId]);
-
-  useEffect(() => {
-    fetchMutual();
-  }, [fetchMutual]);
-
-  return {
-    mutualCount: entry?.count || 0,
-    mutualPreview: entry?.preview || [],
-    isLoading,
-    refresh: fetchMutual,
   };
+
+  return { results, isLoading, error, search };
 }
