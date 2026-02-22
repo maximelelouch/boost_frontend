@@ -2,7 +2,21 @@
 
 export const API_CONFIG = {
   // Utiliser 127.0.0.1 évite les bugs de résolution DNS sur Windows/Node
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
+  baseURL: (() => {
+    const envBaseUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+    const isProd = process.env.NODE_ENV === 'production';
+
+    if (!envBaseUrl) {
+      if (isProd) {
+        throw new Error(
+          'NEXT_PUBLIC_API_URL is not set. Set it on Vercel (Production/Preview) to your backend URL, e.g. https://your-backend.onrender.com'
+        );
+      }
+      return 'http://127.0.0.1:8000';
+    }
+
+    return envBaseUrl.replace(/\/+$/, '');
+  })(),
   timeout: 30000,
   
   endpoints: {
