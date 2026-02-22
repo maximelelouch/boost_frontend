@@ -142,6 +142,44 @@ export function useUserPosts(userId?: string) {
   return { posts, isLoading, error, refresh: fetchPosts };
 }
 
+export function useProfileSocial(userId?: string) {
+  const [friends, setFriends] = useState<User[]>([]);
+  const [mutualFriends, setMutualFriends] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSocial = useCallback(async () => {
+    if (!userId) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [friendsRes, mutualRes] = await Promise.all([
+        usersService.getFriends(userId),
+        usersService.getMutualFriends(userId),
+      ]);
+
+      const friendsList = Array.isArray(friendsRes) ? friendsRes : (friendsRes as any)?.results || [];
+      const mutualList = Array.isArray(mutualRes) ? mutualRes : (mutualRes as any)?.results || [];
+
+      setFriends(friendsList);
+      setMutualFriends(mutualList);
+    } catch (err) {
+      console.error('Erreur lors du chargement social du profil:', err);
+      setError('Impossible de charger les informations sociales.');
+      setFriends([]);
+      setMutualFriends([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchSocial();
+  }, [fetchSocial]);
+
+  return { friends, mutualFriends, isLoading, error, refresh: fetchSocial };
+}
+
 // --- HOOK PUBLICATIONS (FEED) ---
 export function usePosts() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -576,13 +614,13 @@ export function useUpload() {
 }
 
 // --- HOOK SEARCH ---
-export function useSearch() {
+export function useSearch(query?: string | null) {
   const [results, setResults] = useState<SearchResults | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const search = async (query: string) => {
-    if (!query.trim()) {
+  const search = async (q: string) => {
+    if (!q.trim()) {
       setResults(null);
       return;
     }
@@ -590,7 +628,7 @@ export function useSearch() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await searchService.search(query);
+      const data = await searchService.search(q);
       setResults(data);
     } catch (err) {
       setError('Erreur lors de la recherche');
@@ -598,6 +636,12 @@ export function useSearch() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (typeof query === 'string') {
+      search(query);
+    }
+  }, [query]);
 
   return { results, isLoading, error, search };
 }
