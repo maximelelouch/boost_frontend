@@ -10,13 +10,22 @@ export default function SignupPage() {
   const { register, isLoading, error } = useAuth();
   // Nouvel état pour gérer l'affichage du mot de passe
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setLocalError(null);
     const formData = new FormData(event.currentTarget);
     const username = formData.get('username') as string;
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
+    const re_password = formData.get('re_password') as string;
+
+    if ((password || '') !== (re_password || '')) {
+      setLocalError('Les mots de passe ne correspondent pas.');
+      return;
+    }
 
     const fullName = (username || '').trim();
     const nameParts = fullName.split(/\s+/).filter(Boolean);
@@ -41,7 +50,7 @@ export default function SignupPage() {
         // Djoser exige souvent first_name/last_name + re_password selon config
         first_name,
         last_name,
-        re_password: password,
+        re_password: re_password,
       });
       // La redirection est gérée par le hook useAuth
     } catch (err) {
@@ -197,6 +206,33 @@ export default function SignupPage() {
             </div>
             {/* FIN CHAMP MOT DE PASSE */}
 
+            <div className="group">
+                <label className="block text-xs font-medium text-gray-500 mb-1.5 ml-1 uppercase tracking-wider">Confirmer le mot de passe</label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Lock className="h-5 w-5 text-gray-500 group-focus-within:text-violet-400 transition-colors" />
+                    </div>
+                    <input 
+                        type={showConfirmPassword ? "text" : "password"} 
+                        name="re_password" 
+                        required 
+                        className="block w-full pl-11 pr-12 py-3.5 bg-[#18181B] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all shadow-sm" 
+                        placeholder="Retapez le mot de passe" 
+                    />
+                    <button 
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-violet-400 transition-colors"
+                    >
+                        {showConfirmPassword ? (
+                            <EyeOff className="h-5 w-5" />
+                        ) : (
+                            <Eye className="h-5 w-5" />
+                        )}
+                    </button>
+                </div>
+            </div>
+
             {/* Bouton blanc initial avec ombre violette au survol */}
             <button type="submit" disabled={isLoading} className="relative w-full py-3.5 bg-white text-black font-semibold rounded-xl hover:bg-gray-100 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 overflow-hidden group shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(139,92,246,0.3)] mt-4">
                 {isLoading ? <Loader2 className="animate-spin h-5 w-5" /> : (
@@ -206,6 +242,7 @@ export default function SignupPage() {
             </button>
           </form>
 
+                  {localError && <p className="text-red-500 text-sm text-center mb-4">{localError}</p>}
                   {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/10"></span></div>
